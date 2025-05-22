@@ -68,14 +68,14 @@ const SignInPage: React.FC = () => {
         <div className="w-full max-w-md mx-auto">
           <Card className="bg-white/95 backdrop-blur-sm animate-zoom-in border-accent/50 shadow-lg">
             <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-2xl font-bold text-gradient">Connexion</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl font-playfair font-bold text-gradient">Connexion</CardTitle>
+              <CardDescription className="font-poppins">
                 Connectez-vous pour suivre vos statistiques et cumuler des points
               </CardDescription>
             </CardHeader>
             
             <CardContent>
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-4 font-poppins">
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium">
                     Email
@@ -128,7 +128,7 @@ const SignInPage: React.FC = () => {
               </form>
             </CardContent>
             
-            <CardFooter className="flex flex-col space-y-4">
+            <CardFooter className="flex flex-col space-y-4 font-poppins">
               <div className="text-sm text-center text-muted-foreground">
                 Pas encore de compte?{" "}
                 <Link to="/signup" className="text-primary font-medium hover:underline">
