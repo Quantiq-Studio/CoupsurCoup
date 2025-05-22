@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
+import LoadingSpinner from '@/components/game/LoadingSpinner';
 import { Home, Trophy, Clock, Star, BarChart, User, LogOut } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {

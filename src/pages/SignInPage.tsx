@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
@@ -8,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn, UserPlus, Home } from 'lucide-react';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
+import LoadingSpinner from '@/components/game/LoadingSpinner';
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,6 +37,7 @@ const SignInPage: React.FC = () => {
 
       // Mock successful login
       setCurrentPlayer({
+        ...currentPlayer,
         id: 'user-123',
         name: email.split('@')[0],
         avatar: '/placeholder.svg',
