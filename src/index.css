@@ -63,26 +63,34 @@
   }
 
   .button-primary {
-    @apply bg-primary hover:bg-primary/90 text-white font-medium rounded-full py-3 px-8 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
+    @apply bg-gradient-to-r from-game-purple to-game-blue hover:opacity-90 text-white font-medium rounded-full py-3 px-8 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
   }
 
   .button-secondary {
-    @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground font-medium rounded-full py-3 px-8 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
+    @apply bg-gradient-to-r from-game-orange to-game-yellow hover:opacity-90 text-white font-medium rounded-full py-3 px-8 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
   }
 
   .button-accent {
-    @apply bg-accent hover:bg-accent/90 text-accent-foreground font-medium rounded-full py-3 px-8 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
+    @apply bg-gradient-to-r from-game-yellow to-game-red hover:opacity-90 text-white font-medium rounded-full py-3 px-8 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
   }
 
   .game-card {
-    @apply bg-white rounded-xl shadow-lg p-6 border border-border;
+    @apply bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-accent/30;
   }
 
   .game-gradient {
-    @apply bg-game-gradient text-white;
+    @apply bg-gradient-to-br from-game-blue via-game-purple to-game-red text-white;
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-game-gradient;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-game-purple to-game-blue;
+  }
+  
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
   }
 }

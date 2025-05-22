@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import CopyToClipboard from '@/components/game/CopyToClipboard';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
-import { HomeIcon, PlayIcon, TimerIcon, User } from 'lucide-react';
+import { HomeIcon, PlayIcon, TimerIcon, User, AlertTriangle } from 'lucide-react';
 
 // Mock players for development
 const mockPlayers = [
@@ -15,6 +15,8 @@ const mockPlayers = [
   { id: '2', name: 'Bob', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false },
   { id: '3', name: 'Charlie', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false },
 ];
+
+const MIN_PLAYERS = 4;
 
 const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +41,11 @@ const WaitingRoom: React.FC = () => {
     }
 
     const timer = setTimeout(() => {
-      setPlayers([currentPlayer, ...mockPlayers.filter(p => p.id !== '1')]);
+      // Make sure we have at least MIN_PLAYERS - 1 mock players (not including current player)
+      const additionalPlayersNeeded = Math.max(0, MIN_PLAYERS - 1);
+      const mocksToAdd = mockPlayers.slice(0, additionalPlayersNeeded);
+      
+      setPlayers([currentPlayer, ...mocksToAdd]);
       setIsLoading(false);
     }, 1500);
 
@@ -59,10 +65,10 @@ const WaitingRoom: React.FC = () => {
   }, []);
 
   const startGame = () => {
-    if (players.length < 2) {
+    if (players.length < MIN_PLAYERS) {
       toast({
         title: 'Pas assez de joueurs',
-        description: 'Il faut au moins 2 joueurs pour commencer la partie.',
+        description: `Il faut au moins ${MIN_PLAYERS} joueurs pour commencer la partie.`,
         variant: 'destructive',
       });
       return;
@@ -74,7 +80,7 @@ const WaitingRoom: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-game-gradient flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-game-blue via-game-purple to-game-red flex flex-col">
       <div className="game-container flex flex-col flex-grow py-8">
         <div className="flex justify-between items-center mb-8">
           <Button 
@@ -137,6 +143,16 @@ const WaitingRoom: React.FC = () => {
                   </div>
                 ))}
               </div>
+              
+              {players.length < MIN_PLAYERS && (
+                <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg flex items-start gap-3">
+                  <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-medium">Attention</h3>
+                    <p>Il faut au moins {MIN_PLAYERS} joueurs pour commencer la partie. Actuellement {players.length} joueur(s).</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8">
@@ -154,11 +170,15 @@ const WaitingRoom: React.FC = () => {
             <div className="mt-auto text-center">
               {currentPlayer?.isHost ? (
                 <Button 
-                  className="button-accent text-lg py-4 px-10"
+                  className="bg-gradient-to-r from-game-yellow to-game-red hover:opacity-90 text-lg py-4 px-10 shadow-lg"
                   onClick={startGame}
+                  disabled={players.length < MIN_PLAYERS}
                 >
                   <PlayIcon className="h-5 w-5 mr-2" />
-                  Lancer la partie
+                  {players.length < MIN_PLAYERS ? 
+                    `En attente de joueurs (${players.length}/${MIN_PLAYERS})` : 
+                    'Lancer la partie'
+                  }
                 </Button>
               ) : (
                 <div className="animate-pulse">
