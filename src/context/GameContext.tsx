@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext } from 'react';
 
 export type Player = {
@@ -8,6 +7,11 @@ export type Player = {
   score: number;
   isHost: boolean;
   isEliminated: boolean;
+  // Additional properties for authenticated users
+  email?: string;
+  totalScore?: number;
+  gamesPlayed?: number;
+  gamesWon?: number;
 };
 
 type Question = {

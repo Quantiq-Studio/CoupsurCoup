@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
@@ -12,7 +13,7 @@ import LoadingSpinner from '@/components/game/LoadingSpinner';
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { setCurrentPlayer } = useGame();
+  const { currentPlayer, setCurrentPlayer } = useGame();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +38,6 @@ const SignInPage: React.FC = () => {
 
       // Mock successful login
       setCurrentPlayer({
-        ...currentPlayer,
         id: 'user-123',
         name: email.split('@')[0],
         avatar: '/placeholder.svg',
