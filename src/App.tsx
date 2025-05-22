@@ -19,6 +19,11 @@ import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import NotFound from "./pages/NotFound";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+// Gamification pages
+import BadgesPage from "./pages/BadgesPage";
+import ChallengesPage from "./pages/ChallengesPage";
+import ShopPage from "./pages/ShopPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +45,11 @@ const App = () => (
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              {/* Gamification routes */}
+              <Route path="/badges" element={<BadgesPage />} />
+              <Route path="/challenges" element={<ChallengesPage />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

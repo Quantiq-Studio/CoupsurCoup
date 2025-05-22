@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
-import { Home, Trophy, Clock, Star, BarChart, User, LogOut } from 'lucide-react';
+import GamificationSummary from '@/components/game/GamificationSummary';
+import LevelProgress from '@/components/game/LevelProgress';
+import { Award, BarChart, Calendar, Coins, Home, LogOut, Medal, ShoppingBag, Trophy, User } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ const ProfilePage: React.FC = () => {
   }, [currentPlayer, navigate, toast]);
   
   const handleLogout = () => {
-    setCurrentPlayer(undefined);
+    setCurrentPlayer(null);
     toast({
       title: "Déconnecté",
       description: "Vous avez été déconnecté avec succès",
@@ -95,6 +97,13 @@ const ProfilePage: React.FC = () => {
             </CardHeader>
             
             <CardContent className="space-y-4">
+              {/* Level Progress */}
+              <LevelProgress 
+                level={currentPlayer.level || 1} 
+                experience={currentPlayer.experience || 0}
+                compact
+              />
+              
               <div className="flex justify-between items-center bg-muted/30 p-3 rounded-lg">
                 <div className="flex items-center">
                   <Trophy className="h-5 w-5 text-accent mr-2" />
@@ -105,7 +114,7 @@ const ProfilePage: React.FC = () => {
               
               <div className="flex justify-between items-center bg-muted/30 p-3 rounded-lg">
                 <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-secondary mr-2" />
+                  <Calendar className="h-5 w-5 text-secondary mr-2" />
                   <span className="text-sm">Parties jouées</span>
                 </div>
                 <span className="font-bold">{currentPlayer.gamesPlayed || 0}</span>
@@ -113,17 +122,57 @@ const ProfilePage: React.FC = () => {
               
               <div className="flex justify-between items-center bg-muted/30 p-3 rounded-lg">
                 <div className="flex items-center">
-                  <Star className="h-5 w-5 text-accent mr-2" />
-                  <span className="text-sm">Victoires</span>
+                  <Coins className="h-5 w-5 text-yellow-500 mr-2" />
+                  <span className="text-sm">Pièces</span>
                 </div>
-                <span className="font-bold">{currentPlayer.gamesWon || 0}</span>
+                <span className="font-bold">{currentPlayer.coins || 0}</span>
               </div>
             </CardContent>
             
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                  onClick={() => navigate('/badges')}
+                >
+                  <Medal className="h-4 w-4 mr-2" />
+                  Badges
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                  onClick={() => navigate('/challenges')}
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Défis
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                  onClick={() => navigate('/shop')}
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Boutique
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                  onClick={() => navigate('/leaderboard')}
+                >
+                  <BarChart className="h-4 w-4 mr-2" />
+                  Classement
+                </Button>
+              </div>
+              
               <Button 
                 variant="destructive" 
-                className="w-full"
+                className="w-full mt-2"
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5 mr-2" />
@@ -132,8 +181,11 @@ const ProfilePage: React.FC = () => {
             </CardFooter>
           </Card>
           
+          {/* Gamification Summary */}
+          <GamificationSummary />
+          
           {/* Game History */}
-          <Card className="bg-white/95 backdrop-blur-sm animate-zoom-in shadow-lg border-accent/50 md:col-span-2">
+          <Card className="bg-white/95 backdrop-blur-sm animate-zoom-in shadow-lg border-accent/50 md:col-span-3">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <BarChart className="h-5 w-5 mr-2 text-primary" />
