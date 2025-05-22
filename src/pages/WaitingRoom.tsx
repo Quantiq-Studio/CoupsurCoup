@@ -1,0 +1,176 @@
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useGame } from '../context/GameContext';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import CopyToClipboard from '@/components/game/CopyToClipboard';
+import LoadingSpinner from '@/components/game/LoadingSpinner';
+import { HomeIcon, PlayIcon, TimerIcon, User } from 'lucide-react';
+
+// Mock players for development
+const mockPlayers = [
+  { id: '1', name: 'Alice', avatar: '/placeholder.svg', score: 0, isHost: true, isEliminated: false },
+  { id: '2', name: 'Bob', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false },
+  { id: '3', name: 'Charlie', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false },
+];
+
+const WaitingRoom: React.FC = () => {
+  const navigate = useNavigate();
+  const { roomId } = useParams<{ roomId: string }>();
+  const { toast } = useToast();
+  const { 
+    currentPlayer, 
+    players, 
+    setPlayers, 
+    setCurrentRound,
+    setCurrentQuestionIndex
+  } = useGame();
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [playerCount, setPlayerCount] = useState(0);
+
+  // Simulate loading players from a backend
+  useEffect(() => {
+    if (!currentPlayer) {
+      navigate('/');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setPlayers([currentPlayer, ...mockPlayers.filter(p => p.id !== '1')]);
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [currentPlayer, setPlayers, navigate]);
+
+  // Simulate a player counter that updates occasionally
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlayerCount(prev => {
+        const randomChange = Math.random() > 0.7 ? 1 : 0;
+        return Math.min(prev + randomChange, 15);
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const startGame = () => {
+    if (players.length < 2) {
+      toast({
+        title: 'Pas assez de joueurs',
+        description: 'Il faut au moins 2 joueurs pour commencer la partie.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCurrentRound(1);
+    setCurrentQuestionIndex(0);
+    navigate(`/round1/${roomId}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-game-gradient flex flex-col">
+      <div className="game-container flex flex-col flex-grow py-8">
+        <div className="flex justify-between items-center mb-8">
+          <Button 
+            variant="outline" 
+            className="bg-white/20 hover:bg-white/30"
+            onClick={() => navigate('/')}
+          >
+            <HomeIcon className="h-5 w-5 mr-2" />
+            Quitter
+          </Button>
+          
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
+            <User className="h-4 w-4" />
+            <span className="font-medium">{playerCount} en ligne</span>
+          </div>
+        </div>
+
+        <div className="text-center mb-8 animate-bounce-in">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Salle d'attente</h1>
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+            <p className="text-xl">Code de la salle:</p>
+            <div className="flex items-center gap-2">
+              <div className="bg-white/20 py-2 px-6 rounded-lg font-mono text-xl font-bold tracking-wider">
+                {roomId}
+              </div>
+              <CopyToClipboard text={roomId || ''} />
+            </div>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex-grow flex flex-col items-center justify-center">
+            <LoadingSpinner />
+            <p className="mt-4 text-lg">Chargement des joueurs...</p>
+          </div>
+        ) : (
+          <>
+            <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8 animate-zoom-in">
+              <h2 className="text-xl font-medium mb-4 flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Joueurs connectés ({players.length})
+              </h2>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {players.map(player => (
+                  <div 
+                    key={player.id} 
+                    className={`flex flex-col items-center p-3 rounded-lg ${
+                      player.isHost ? 'bg-accent/30 ring-2 ring-accent' : 'bg-white/10'
+                    }`}
+                  >
+                    <Avatar className="w-16 h-16 mb-2 border-2 border-white/50">
+                      <AvatarImage src={player.avatar} alt={player.name} />
+                      <AvatarFallback>{player.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-medium text-center">{player.name}</p>
+                    {player.isHost && (
+                      <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8">
+              <h2 className="text-xl font-medium mb-4 flex items-center">
+                <TimerIcon className="h-5 w-5 mr-2" />
+                En attendant...
+              </h2>
+              <p>
+                Préparez-vous à affronter d'autres joueurs dans une série d'épreuves de 
+                connaissances ! Le dernier joueur restant aura l'honneur d'accéder à 
+                l'épreuve finale : La Grille des Indices !
+              </p>
+            </div>
+            
+            <div className="mt-auto text-center">
+              {currentPlayer?.isHost ? (
+                <Button 
+                  className="button-accent text-lg py-4 px-10"
+                  onClick={startGame}
+                >
+                  <PlayIcon className="h-5 w-5 mr-2" />
+                  Lancer la partie
+                </Button>
+              ) : (
+                <div className="animate-pulse">
+                  <p>En attente du lancement par l'hôte...</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default WaitingRoom;

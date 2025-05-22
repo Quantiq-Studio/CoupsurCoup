@@ -1,9 +1,19 @@
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { GameProvider } from "./context/GameContext";
+
+// Pages
+import HomePage from "./pages/HomePage";
+import WaitingRoom from "./pages/WaitingRoom";
+import QuizRound1 from "./pages/QuizRound1";
+import QuizRound2 from "./pages/QuizRound2";
+import QuizRound3 from "./pages/QuizRound3";
+import FinalGrid from "./pages/FinalGrid";
+import ResultsPage from "./pages/ResultsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -11,15 +21,24 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <GameProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/waiting-room/:roomId" element={<WaitingRoom />} />
+              <Route path="/round1/:roomId" element={<QuizRound1 />} />
+              <Route path="/round2/:roomId" element={<QuizRound2 />} />
+              <Route path="/round3/:roomId" element={<QuizRound3 />} />
+              <Route path="/final-grid/:roomId" element={<FinalGrid />} />
+              <Route path="/results/:roomId" element={<ResultsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+        <Toaster />
+        <Sonner />
+      </GameProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
