@@ -1,16 +1,14 @@
-
-// This is a modified version that adds the required coins property to players
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
 import { GameHeader } from '@/components/ui/game-header';
 import { GameButton } from '@/components/ui/game-button';
 import { Card } from '@/components/ui/card';
-import { AvatarSelector } from '@/components/game/AvatarSelector';
+import AvatarSelector from '@/components/game/AvatarSelector';
 import { GameInput } from '@/components/ui/game-input';
-import { CopyToClipboard } from '@/components/game/CopyToClipboard';
-import { PlayerStatus } from '@/components/game/PlayerStatus';
-import { BackgroundShapes } from '@/components/game/BackgroundShapes';
+import CopyToClipboard from '@/components/game/CopyToClipboard';
+import PlayerStatus from '@/components/game/PlayerStatus';
+import BackgroundShapes from '@/components/game/BackgroundShapes';
 
 const WaitingRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -60,7 +58,7 @@ const WaitingRoom: React.FC = () => {
       <BackgroundShapes />
       
       <div className="container mx-auto px-4 py-8">
-        <GameHeader title="Salon d'attente" />
+        <GameHeader showHomeButton={true} />
         
         <div className="max-w-4xl mx-auto">
           <Card className="bg-white/10 backdrop-blur-sm border-white/20 overflow-hidden">
@@ -68,7 +66,7 @@ const WaitingRoom: React.FC = () => {
               <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
                 <h2 className="text-2xl font-bold">Code du salon: {roomId}</h2>
                 <CopyToClipboard 
-                  textToCopy={`${window.location.origin}/join/${roomId}`}
+                  text={`${window.location.origin}/join/${roomId}`}
                   message="Lien d'invitation copié!"
                 />
               </div>

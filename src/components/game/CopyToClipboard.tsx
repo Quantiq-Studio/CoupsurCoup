@@ -6,9 +6,10 @@ import { CheckIcon, CopyIcon } from 'lucide-react';
 
 interface CopyToClipboardProps {
   text: string;
+  message?: string;
 }
 
-const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text }) => {
+const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, message = "Copied to clipboard!" }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   
@@ -17,7 +18,7 @@ const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text }) => {
       setCopied(true);
       toast({
         title: "Copié !",
-        description: "Le code a été copié dans le presse-papiers.",
+        description: message,
       });
       
       setTimeout(() => setCopied(false), 2000);

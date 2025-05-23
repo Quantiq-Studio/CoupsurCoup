@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
@@ -199,7 +198,7 @@ const QuizRound1: React.FC = () => {
         <GameNotification 
           title="Chargement..." 
           message="Préparation des questions en cours." 
-          variant="info"
+          variant="default"
         />
       </div>
     );

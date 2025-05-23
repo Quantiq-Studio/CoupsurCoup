@@ -6,8 +6,8 @@ import { GameInput } from '@/components/ui/game-input';
 import { GameButton } from '@/components/ui/game-button';
 import { Card } from '@/components/ui/card';
 import { useGame } from '@/context/GameContext';
-import { BackgroundShapes } from '@/components/game/BackgroundShapes';
-import { AvatarSelector } from '@/components/game/AvatarSelector';
+import BackgroundShapes from '@/components/game/BackgroundShapes';
+import AvatarSelector from '@/components/game/AvatarSelector';
 import { useToast } from '@/hooks/use-toast';
 
 const SignUpPage: React.FC = () => {
@@ -74,7 +74,7 @@ const SignUpPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-900 via-blue-900 to-violet-800">
       <BackgroundShapes />
       
-      <GameTitle className="mb-8" />
+      <GameTitle className="mb-8">QuizMania</GameTitle>
       
       <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-white/20">
         <div className="p-6">
