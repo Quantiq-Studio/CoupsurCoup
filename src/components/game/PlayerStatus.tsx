@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Player } from '@/context/GameContext';
 import { GameAvatar } from '@/components/ui/game-avatar';
 import { CoinCounter } from '@/components/ui/coin-counter';
+import { Badge } from '@/components/ui/badge';
 
 type PlayerStatus = 'green' | 'orange' | 'red' | 'eliminated';
 
@@ -15,6 +16,7 @@ interface PlayerStatusProps {
   status?: PlayerStatus;
   compact?: boolean;
   onClick?: () => void;
+  showHost?: boolean;
 }
 
 const PlayerStatus: React.FC<PlayerStatusProps> = ({
@@ -24,7 +26,8 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
   coinChange = 0,
   status = 'green',
   compact = false,
-  onClick
+  onClick,
+  showHost = false
 }) => {
   // Status colors
   const statusColors = {
@@ -41,6 +44,24 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
     red: 'Danger',
     eliminated: 'Éliminé'
   };
+
+  // Status background
+  const statusBackgrounds = {
+    green: 'bg-green-500/10',
+    orange: 'bg-orange-500/10',
+    red: 'bg-red-500/10',
+    eliminated: 'bg-gray-500/10'
+  };
+  
+  // Status text colors
+  const statusTextColors = {
+    green: 'text-green-500',
+    orange: 'text-orange-500',
+    red: 'text-red-500',
+    eliminated: 'text-gray-500'
+  };
+  
+  const playerStatus = player.isEliminated ? 'eliminated' : status;
   
   return (
     <div 
@@ -48,7 +69,8 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
         "flex items-center p-2 rounded-lg transition-all",
         isActive ? "bg-white/30 scale-105 shadow-lg" : "bg-white/10", 
         player.isEliminated && "opacity-60",
-        onClick && "cursor-pointer hover:bg-white/20"
+        onClick && "cursor-pointer hover:bg-white/20",
+        statusBackgrounds[playerStatus]
       )}
       onClick={onClick}
     >
@@ -64,8 +86,8 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
         />
         
         <div className={cn(
-          "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white",
-          statusColors[player.isEliminated ? 'eliminated' : status]
+          "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white",
+          statusColors[playerStatus]
         )} />
       </div>
       
@@ -76,14 +98,18 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
             compact ? "text-sm" : "text-base"
           )}>
             {player.name}
-            {player.isHost && <span className="text-xs ml-1">(H)</span>}
+            {(player.isHost && showHost) && <span className="text-xs ml-1">(H)</span>}
           </p>
           
-          {!compact && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-white/20 ml-1">
-              {player.isEliminated ? 'Éliminé' : statusLabels[status]}
-            </span>
-          )}
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "ml-1 px-2 text-xs",
+              statusTextColors[playerStatus]
+            )}
+          >
+            {statusLabels[playerStatus]}
+          </Badge>
         </div>
         
         <div className="flex items-center justify-between mt-0.5">

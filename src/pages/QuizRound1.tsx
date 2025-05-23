@@ -9,12 +9,14 @@ import OptionButton from '@/components/game/OptionButton';
 import RoundTitle from '@/components/game/RoundTitle';
 import PlayerStatus from '@/components/game/PlayerStatus';
 import { GameNotification } from '@/components/ui/game-notification';
-import { TimerIcon, AlertCircle, ArrowDown } from 'lucide-react';
+import { TimerIcon, AlertCircle, ArrowDown, AlertTriangle } from 'lucide-react';
 import { CoinCounter } from '@/components/ui/coin-counter';
 import { Player } from '@/context/GameTypes';
+import { useToast } from '@/hooks/use-toast';
 
 const QuizRound1: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { roomId } = useParams<{ roomId: string }>();
   const { 
     questions, 
@@ -37,6 +39,8 @@ const QuizRound1: React.FC = () => {
   const [coinChanges, setCoinChanges] = useState<Record<string, number>>({});
   const [showDuelNotification, setShowDuelNotification] = useState(false);
   const [duelPlayerId, setDuelPlayerId] = useState<string | null>(null);
+  const [showStatusChangeNotification, setShowStatusChangeNotification] = useState<{playerId: string, status: 'orange' | 'red'} | null>(null);
+  const [roundTransitionCountdown, setRoundTransitionCountdown] = useState<number | null>(null);
   
   const currentQuestion = questions[currentQuestionIndex];
   const activePlayers = players.filter(p => !p.isEliminated);
@@ -54,10 +58,57 @@ const QuizRound1: React.FC = () => {
       setActivePlayerId(activePlayers[0].id);
     }
   }, [activePlayers, playerStatuses]);
+
+  // Check for round transitions based on number of active players
+  useEffect(() => {
+    // If we already have a countdown running, don't start another one
+    if (roundTransitionCountdown !== null || showDuelNotification) return;
+    
+    const nonEliminatedPlayers = players.filter(p => !p.isEliminated).length;
+    
+    if (nonEliminatedPlayers <= 3 && nonEliminatedPlayers > 2) {
+      // Transition to round 2
+      setRoundTransitionCountdown(3);
+      toast({
+        title: "Phase suivante",
+        description: "Il ne reste que 3 joueurs ! Passage à la phase 2...",
+        variant: "default",
+      });
+    } else if (nonEliminatedPlayers <= 2) {
+      // Transition to round 3
+      setRoundTransitionCountdown(3);
+      toast({
+        title: "Phase finale",
+        description: "Il ne reste que 2 joueurs ! Passage à la phase 3...",
+        variant: "default",
+      });
+    }
+  }, [players, roundTransitionCountdown, showDuelNotification, toast]);
+  
+  // Handle round transition countdown
+  useEffect(() => {
+    if (roundTransitionCountdown === null) return;
+    
+    const nonEliminatedPlayers = players.filter(p => !p.isEliminated).length;
+    
+    if (roundTransitionCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRoundTransitionCountdown(roundTransitionCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Navigate to the appropriate round
+      if (nonEliminatedPlayers <= 3 && nonEliminatedPlayers > 2) {
+        navigate(`/round2/${roomId}`);
+      } else if (nonEliminatedPlayers <= 2) {
+        navigate(`/round3/${roomId}`);
+      }
+    }
+  }, [roundTransitionCountdown, players, navigate, roomId]);
   
   // Timer logic
   useEffect(() => {
-    if (showResult || roundComplete || !activePlayerId) return;
+    if (showResult || roundComplete || !activePlayerId || roundTransitionCountdown !== null) return;
     
     if (timeRemaining > 0) {
       const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
@@ -66,7 +117,7 @@ const QuizRound1: React.FC = () => {
       // Time's up!
       handleTimeUp();
     }
-  }, [timeRemaining, showResult, roundComplete, activePlayerId, setTimeRemaining]);
+  }, [timeRemaining, showResult, roundComplete, activePlayerId, setTimeRemaining, roundTransitionCountdown]);
   
   // Handle time up (no answer selected)
   const handleTimeUp = () => {
@@ -95,8 +146,28 @@ const QuizRound1: React.FC = () => {
       
       if (currentStatus === 'green') {
         newStatus = 'orange';
+        
+        // Show notification for status change to orange
+        setShowStatusChangeNotification({playerId, status: 'orange'});
+        
+        toast({
+          title: "Attention !",
+          description: `${getPlayerById(playerId)?.name} est maintenant en alerte.`,
+          variant: "warning",
+        });
+        
       } else if (currentStatus === 'orange') {
         newStatus = 'red';
+        
+        // Show notification for status change to red
+        setShowStatusChangeNotification({playerId, status: 'red'});
+        
+        toast({
+          title: "Danger !",
+          description: `${getPlayerById(playerId)?.name} est en zone rouge.`,
+          variant: "destructive",
+        });
+        
         // Trigger duel notification
         setDuelPlayerId(playerId);
         setShowDuelNotification(true);
@@ -119,6 +190,9 @@ const QuizRound1: React.FC = () => {
   
   // Move to next player
   const moveToNextPlayer = () => {
+    // Reset status change notification
+    setShowStatusChangeNotification(null);
+    
     setSelectedOption(null);
     setShowResult(false);
     setTimeRemaining(10); // Reset timer
@@ -152,7 +226,7 @@ const QuizRound1: React.FC = () => {
     setSelectedOption(optionIndex);
     setShowResult(true);
     
-    if (optionIndex === currentQuestion.correctAnswer) {
+    if (optionIndex === currentQuestion?.correctAnswer) {
       // Correct answer
       updatePlayerScore(activePlayerId, 10);
       
@@ -182,6 +256,59 @@ const QuizRound1: React.FC = () => {
   // Get active player
   const activePlayer = activePlayerId ? getPlayerById(activePlayerId) : null;
   
+  // Display status change notification
+  const renderStatusChangeNotification = () => {
+    if (!showStatusChangeNotification) return null;
+    
+    const { playerId, status } = showStatusChangeNotification;
+    const player = getPlayerById(playerId);
+    
+    if (!player) return null;
+    
+    const title = status === 'orange' ? 'Attention !' : 'Danger !';
+    const message = status === 'orange' 
+      ? `${player.name} est maintenant en alerte. Encore une erreur et c'est le duel !`
+      : `${player.name} est en danger ! Duel imminent !`;
+    
+    return (
+      <div className="mb-4 animate-bounce-in">
+        <GameNotification
+          title={title}
+          message={message}
+          variant={status === 'orange' ? 'warning' : 'error'}
+          icon={status === 'orange' ? AlertTriangle : AlertCircle}
+        />
+      </div>
+    );
+  };
+  
+  // Render round transition notification
+  const renderRoundTransitionNotification = () => {
+    if (roundTransitionCountdown === null) return null;
+    
+    const nonEliminatedPlayers = players.filter(p => !p.isEliminated).length;
+    let title, message;
+    
+    if (nonEliminatedPlayers <= 3 && nonEliminatedPlayers > 2) {
+      title = "Passage à la phase 2";
+      message = `Il ne reste que ${nonEliminatedPlayers} joueurs ! Passage à la phase 2 dans ${roundTransitionCountdown}...`;
+    } else {
+      title = "Passage à la phase 3";
+      message = `Il ne reste que ${nonEliminatedPlayers} joueurs ! Passage à la phase 3 dans ${roundTransitionCountdown}...`;
+    }
+    
+    return (
+      <div className="mb-4 animate-bounce-in">
+        <GameNotification
+          title={title}
+          message={message}
+          variant="default"
+          icon={TimerIcon}
+        />
+      </div>
+    );
+  };
+  
   return (
     <div className="min-h-screen bg-game-gradient flex flex-col">
       <div className="game-container flex flex-col flex-grow py-8">
@@ -196,7 +323,7 @@ const QuizRound1: React.FC = () => {
             <span>Question {currentQuestionIndex + 1}</span>
           </div>
           
-          {activePlayer && (
+          {activePlayer && roundTransitionCountdown === null && (
             <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
               <TimerIcon className="h-4 w-4" />
               <span>{timeRemaining}s</span>
@@ -204,12 +331,14 @@ const QuizRound1: React.FC = () => {
           )}
         </div>
         
+        {renderRoundTransitionNotification()}
+        
         {showDuelNotification && duelPlayerId && (
           <div className="mb-6 animate-bounce-in">
             <GameNotification
               title="Duel Décisif!"
               message={`${getPlayerById(duelPlayerId)?.name} doit affronter un adversaire en duel!`}
-              variant="warning"
+              variant="error"
               icon={AlertCircle}
               className="mb-4"
             />
@@ -225,7 +354,9 @@ const QuizRound1: React.FC = () => {
           </div>
         )}
         
-        {!showDuelNotification && (
+        {renderStatusChangeNotification()}
+        
+        {!showDuelNotification && roundTransitionCountdown === null && (
           <>
             {activePlayer && (
               <div className="mb-6 animate-fade-in">
@@ -272,7 +403,7 @@ const QuizRound1: React.FC = () => {
               
               {showResult && !showDuelNotification && (
                 <div className="mt-6 text-center animate-bounce-in">
-                  {selectedOption === currentQuestion.correctAnswer ? (
+                  {selectedOption === currentQuestion?.correctAnswer ? (
                     <div>
                       <p className="text-xl font-bold text-green-400">Bonne réponse !</p>
                       <div className="flex items-center justify-center mt-1">
@@ -293,7 +424,7 @@ const QuizRound1: React.FC = () => {
                     </div>
                   )}
                   <p className="mt-2">
-                    La bonne réponse était : {currentQuestion.options[currentQuestion.correctAnswer]}
+                    La bonne réponse était : {currentQuestion?.options[currentQuestion.correctAnswer]}
                   </p>
                 </div>
               )}
