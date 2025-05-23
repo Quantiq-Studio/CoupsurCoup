@@ -33,7 +33,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       {(category || difficulty) && (
         <div className={`flex ${compact ? 'justify-start' : 'justify-center'} gap-2 mb-3`}>
           {category && (
-            <Badge variant="outline" className="bg-white/10 hover:bg-white/20">
+            <Badge variant="outline" className="bg-white/10 hover:bg-white/20 text-white">
               {category}
             </Badge>
           )}
@@ -44,7 +44,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           )}
         </div>
       )}
-      <h2 className={`font-bold ${compact ? 'text-lg' : 'text-2xl'} mb-2`}>{question}</h2>
+      <h2 className={`font-bold ${compact ? 'text-lg' : 'text-2xl'} mb-2 text-white`}>{question}</h2>
     </div>
   );
 };

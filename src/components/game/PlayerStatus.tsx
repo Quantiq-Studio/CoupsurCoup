@@ -39,9 +39,9 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
 
   // Status label
   const statusLabels = {
-    green: 'Actif',
-    orange: 'Attention',
-    red: 'Danger',
+    green: 'Vert',
+    orange: 'Orange',
+    red: 'Rouge',
     eliminated: 'Éliminé'
   };
 
@@ -91,7 +91,7 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
         )} />
       </div>
       
-      <div className="ml-2 flex-grow overflow-hidden">
+      <div className="ml-2 flex-grow overflow-hidden text-white">
         <div className="flex items-center justify-between">
           <p className={cn(
             "font-medium truncate",
@@ -113,8 +113,7 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
         </div>
         
         <div className="flex items-center justify-between mt-0.5">
-          <span className="text-sm">{player.score} pts</span>
-          
+
           {showCoins && (
             <CoinCounter 
               value={player.coins || 1000} 

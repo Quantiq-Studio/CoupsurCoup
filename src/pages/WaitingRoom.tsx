@@ -10,14 +10,24 @@ import LoadingSpinner from '@/components/game/LoadingSpinner';
 import { HomeIcon, PlayIcon, TimerIcon, User, AlertTriangle } from 'lucide-react';
 import {GameTitle} from "@/components/ui/game-title.tsx";
 
-// Mock players for development
-const mockPlayers = [
-  { id: '1', name: 'Alice', avatar: '/placeholder.svg', score: 0, isHost: true, isEliminated: false, coins: 1000 },
-  { id: '2', name: 'Bob', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false, coins: 1000 },
-  { id: '3', name: 'Charlie', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false, coins: 1000 },
-];
-
 const MIN_PLAYERS = 4;
+
+const generateBots = (count: number) => {
+  const allNames = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Heidi', 'Nina', 'Oscar', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina'];
+  const shuffled = allNames.sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, count);
+
+  return selected.map((name, i) => ({
+    id: `bot-${i + 1}`,
+    name,
+    avatar: '/placeholder.svg',
+    score: 0,
+    isHost: false,
+    isEliminated: false,
+    coins: 1000,
+    isBot: true,
+  }));
+};
 
 const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
@@ -34,23 +44,31 @@ const WaitingRoom: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [playerCount, setPlayerCount] = useState(0);
 
-  // Simulate loading players from a backend
   useEffect(() => {
     if (!currentPlayer) {
       navigate('/');
       return;
     }
 
-    const timer = setTimeout(() => {
-      // Make sure we have at least MIN_PLAYERS - 1 mock players (not including current player)
-      const additionalPlayersNeeded = Math.max(0, MIN_PLAYERS - 1);
-      const mocksToAdd = mockPlayers.slice(0, additionalPlayersNeeded);
-      
-      setPlayers([currentPlayer, ...mocksToAdd]);
-      setIsLoading(false);
-    }, 1500);
+    const additionalPlayersNeeded = Math.max(0, MIN_PLAYERS - 1);
+    const bots = generateBots(additionalPlayersNeeded);
 
-    return () => clearTimeout(timer);
+    setPlayers([currentPlayer]); // Commence avec le joueur uniquement
+    setIsLoading(false);
+
+    let i = 0;
+    const interval = setInterval(() => {
+      setPlayers(prev => {
+        if (i < bots.length) {
+          return [...prev, bots[i++]];
+        } else {
+          clearInterval(interval);
+          return prev;
+        }
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [currentPlayer, setPlayers, navigate]);
 
   // Simulate a player counter that updates occasionally
@@ -126,33 +144,38 @@ const WaitingRoom: React.FC = () => {
                 <User className="h-5 w-5 mr-2" />
                 Joueurs connectés ({players.length})
               </h2>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {players.map(player => (
-                  <div 
-                    key={player.id} 
-                    className={`flex flex-col items-center p-3 rounded-lg ${
-                      player.isHost ? 'bg-accent/30 ring-2 ring-accent' : 'bg-white/10'
-                    }`}
+              {players.map(player => (
+                  <div
+                      key={player.id}
+                      className={`flex flex-col items-center p-3 rounded-lg ${
+                          player.isHost ? 'bg-accent/30 ring-2 ring-accent' : 'bg-white/10'
+                      }`}
                   >
                     <Avatar className="w-16 h-16 mb-2 border-2 border-white/50">
                       <AvatarImage src={player.avatar} alt={player.name} />
                       <AvatarFallback>{player.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <p className="font-medium text-center text-white">{player.name}</p>
+
+                    {/* Indicateur BOT ou Hôte */}
                     {player.isHost && (
-                      <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>
+                        <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>
+                    )}
+                    {player.isBot && (
+                        <span className="text-xs py-1 px-2 bg-white/20 text-white rounded-full mt-1">Bot</span>
                     )}
                   </div>
-                ))}
+              ))}
               </div>
-              
+
               {players.length < MIN_PLAYERS && (
                 <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg flex items-start gap-3">
                   <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="font-medium">Attention</h3>
-                    <p>Il faut au moins {MIN_PLAYERS} joueurs pour commencer la partie. Actuellement {players.length} joueur(s).</p>
+                    <h3 className="font-medium text-white">Attention</h3>
+                    <p className="text-white">Il faut au moins {MIN_PLAYERS} joueurs pour commencer la partie. Actuellement {players.length} joueur(s).</p>
                   </div>
                 </div>
               )}

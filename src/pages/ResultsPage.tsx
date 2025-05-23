@@ -18,7 +18,7 @@ const ResultsPage: React.FC = () => {
     // Hide confetti after some time
     const timer = setTimeout(() => {
       setShowConfetti(false);
-    }, 5000);
+    }, 15000);
     
     return () => clearTimeout(timer);
   }, []);

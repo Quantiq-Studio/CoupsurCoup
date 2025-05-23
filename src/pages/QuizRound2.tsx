@@ -177,12 +177,12 @@ const QuizRound2: React.FC = () => {
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
                 <span>Duel {duelCount + 1}/{totalDuels}</span>
               </div>
               
               {activePlayer && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
                   <TimerIcon className="h-4 w-4" />
                   <span>{timeRemaining}s</span>
                 </div>
@@ -261,9 +261,15 @@ const QuizRound2: React.FC = () => {
                               {selectedOption !== null ? "Mauvaise réponse !" : "Temps écoulé !"}
                             </p>
                           )}
-                          <p className="mt-2">
-                            La bonne réponse était : {currentQuestion.options[currentQuestion.correctAnswer]}
-                          </p>
+                          { selectedOption !== null ? (
+                              <p className="mt-2 text-white">
+                                La bonne réponse était : {currentQuestion?.options[currentQuestion.correctAnswer]}
+                              </p> ) : (
+                              <p className="mt-2 text-white">
+                                Vous n'avez pas répondu à temps.
+                              </p>
+                          )
+                          }
                         </div>
                       )}
                     </>
@@ -273,7 +279,7 @@ const QuizRound2: React.FC = () => {
             )}
             
             <div className="mt-auto">
-              <h3 className="text-lg font-bold mb-2">Joueurs restants :</h3>
+              <h3 className="text-lg font-bold mb-2 text-white">Joueurs restants :</h3>
               <ScoreBoard players={players.filter(p => !p.isEliminated)} compact />
             </div>
           </>

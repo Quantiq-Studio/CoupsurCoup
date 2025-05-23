@@ -22,7 +22,6 @@ const QuizRound1: React.FC = () => {
     currentQuestionIndex, 
     setCurrentQuestionIndex, 
     players, 
-    updatePlayerScore,
     timeRemaining,
     setTimeRemaining,
     currentPlayer,
@@ -136,6 +135,37 @@ const QuizRound1: React.FC = () => {
       moveToNextPlayer();
     }, 3000);
   };
+
+  useEffect(() => {
+    if (activePlayer?.isBot && !showResult && !roundComplete && !roundTransitionCountdown) {
+      simulateBotTurn();
+    }
+  }, [activePlayerId, showResult, roundComplete, roundTransitionCountdown]);
+
+
+  const simulateBotTurn = () => {
+    if (!activePlayer || !activePlayer.isBot || !currentQuestion) return;
+
+    const successRate = 0.7; // 70 % de chance de bonne réponse
+    const willSucceed = Math.random() < successRate;
+
+    const answerIndex = willSucceed
+        ? currentQuestion.correctAnswer
+        : getRandomIncorrectOption(currentQuestion.correctAnswer, currentQuestion.options.length);
+
+    // Petite pause pour simuler une réflexion
+    setTimeout(() => {
+      handleOptionSelect(answerIndex);
+    }, 1500);
+  };
+
+  const getRandomIncorrectOption = (correct: number, totalOptions: number): number => {
+    let incorrect;
+    do {
+      incorrect = Math.floor(Math.random() * totalOptions);
+    } while (incorrect === correct);
+    return incorrect;
+  };
   
   // Update player status (green -> orange -> red)
   const updatePlayerStatus = (playerId: string) => {
@@ -190,7 +220,14 @@ const QuizRound1: React.FC = () => {
     }
     
     // Move to next question
-    setCurrentQuestionIndex(currentQuestionIndex + 1);
+    setCurrentQuestionIndex(prev => {
+      const nextIndex = prev + 1;
+      if (nextIndex >= questions.length) {
+        console.warn("Plus de questions disponibles !");
+        return prev; // ou même 0 si tu veux reboucler
+      }
+      return nextIndex;
+    });
     
     // Find next active player
     if (activePlayerId) {
@@ -214,9 +251,6 @@ const QuizRound1: React.FC = () => {
     setShowResult(true);
     
     if (optionIndex === currentQuestion?.correctAnswer) {
-      // Correct answer
-      updatePlayerScore(activePlayerId, 10);
-      
       // Award coins
       const coinGain = 100;
       updatePlayerCoins(activePlayerId, coinGain, 'Bonne réponse');
@@ -306,12 +340,12 @@ const QuizRound1: React.FC = () => {
         />
         
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
             <span>Question {currentQuestionIndex + 1}</span>
           </div>
           
           {activePlayer && roundTransitionCountdown === null && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
               <TimerIcon className="h-4 w-4" />
               <span>{timeRemaining}s</span>
             </div>
@@ -347,7 +381,7 @@ const QuizRound1: React.FC = () => {
           <>
             {activePlayer && (
               <div className="mb-6 animate-fade-in">
-                <h3 className="text-center text-lg mb-2">Au tour de</h3>
+                <h3 className="text-center text-lg mb-2 text-white">Au tour de</h3>
                 <div className="max-w-xs mx-auto">
                   <PlayerStatus 
                     player={activePlayer}
@@ -361,7 +395,7 @@ const QuizRound1: React.FC = () => {
             )}
             
             <Progress 
-              value={(timeRemaining / 10) * 100} 
+              value={(timeRemaining / 10) * 100}
               className="h-2 mb-8"
             />
             
@@ -382,7 +416,9 @@ const QuizRound1: React.FC = () => {
                     selected={selectedOption === index}
                     correct={showResult && index === currentQuestion.correctAnswer}
                     incorrect={showResult && selectedOption === index && index !== currentQuestion.correctAnswer}
-                    disabled={showResult || showDuelNotification}
+                    disabled={showResult || showDuelNotification ||
+                        activePlayer?.id !== currentPlayer?.id ||
+                        currentPlayer?.isBot}
                     onClick={() => handleOptionSelect(index)}
                   />
                 ))}
@@ -393,32 +429,29 @@ const QuizRound1: React.FC = () => {
                   {selectedOption === currentQuestion?.correctAnswer ? (
                     <div>
                       <p className="text-xl font-bold text-green-400">Bonne réponse !</p>
-                      <div className="flex items-center justify-center mt-1">
-                        <span className="mr-2">+10 points</span>
-                        <CoinCounter value={0} change={100} showIcon={true} />
-                      </div>
                     </div>
                   ) : (
                     <div>
                       <p className="text-xl font-bold text-red-400">
                         {selectedOption !== null ? "Mauvaise réponse !" : "Temps écoulé !"}
                       </p>
-                      {selectedOption !== null && (
-                        <div className="flex items-center justify-center mt-1">
-                          <CoinCounter value={0} change={-75} showIcon={true} />
-                        </div>
-                      )}
                     </div>
                   )}
-                  <p className="mt-2">
-                    La bonne réponse était : {currentQuestion?.options[currentQuestion.correctAnswer]}
-                  </p>
+                  { selectedOption !== null ? (
+                      <p className="mt-2 text-white">
+                        La bonne réponse était : {currentQuestion?.options[currentQuestion.correctAnswer]}
+                      </p> ) : (
+                        <p className="mt-2 text-white">
+                            Vous n'avez pas répondu à temps.
+                        </p>
+                        )
+                  }
                 </div>
               )}
             </div>
             
             <div className="mt-auto">
-              <h3 className="text-lg font-bold mb-2 flex items-center">
+              <h3 className="text-lg font-bold mb-2 flex items-center text-white">
                 Statut des joueurs <ArrowDown className="ml-2 h-4 w-4" />
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

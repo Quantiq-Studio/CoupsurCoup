@@ -93,7 +93,7 @@ export const CoinCounter: React.FC<CoinCounterProps> = ({
       {changeDisplay && (
         <span 
           className={cn(
-            "absolute -top-5 font-bold animate-fade-out",
+            "absolute -right-10 font-bold animate-fade-out",
             changeDisplay.startsWith('+') ? "text-green-400" : "text-red-400"
           )}
         >

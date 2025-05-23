@@ -53,7 +53,7 @@ export const GameNotification: React.FC<GameNotificationProps> = ({
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm">{title}</h4>
+            <h4 className="font-medium text-sm text-white">{title}</h4>
             {onClose && (
               <button onClick={onClose} className="text-white/60 hover:text-white">
                 &times;

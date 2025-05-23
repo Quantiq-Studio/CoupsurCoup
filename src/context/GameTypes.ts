@@ -10,6 +10,7 @@ export type Player = {
   isEliminated: boolean;
   status?: PlayerStatus;
   coins: number;
+  isBot?: boolean;
   
   // Additional properties for authenticated users
   email?: string;
