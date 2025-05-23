@@ -1,153 +1,142 @@
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { GameTitle } from '@/components/ui/game-title';
+import { GameInput } from '@/components/ui/game-input';
+import { GameButton } from '@/components/ui/game-button';
+import { Card } from '@/components/ui/card';
 import { useGame } from '@/context/GameContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { BackgroundShapes } from '@/components/game/BackgroundShapes';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogIn, UserPlus, Home } from 'lucide-react';
-import BackgroundShapes from '@/components/game/BackgroundShapes';
-import LoadingSpinner from '@/components/game/LoadingSpinner';
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentPlayer, setCurrentPlayer } = useGame();
+  const { setCurrentPlayer } = useGame();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSignIn = (e: React.FormEvent) => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate sign in process
-    setTimeout(() => {
-      // Basic validation
-      if (!email || !password) {
+    try {
+      // Simulate API call for authentication
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For demo purposes, auto-login
+      if (email.includes('@')) {
+        // Create a mock authenticated user
+        setCurrentPlayer({
+          id: 'user-' + Date.now(),
+          name: email.split('@')[0],
+          avatar: `/avatars/avatar-${Math.floor(Math.random() * 8) + 1}.png`,
+          score: 0,
+          isHost: false,
+          isEliminated: false,
+          email: email,
+          totalScore: 1250,
+          gamesPlayed: 10,
+          gamesWon: 3,
+          coins: 1000
+        });
+        
+        toast({
+          title: 'Connexion réussie!',
+          description: 'Bienvenue sur QuizMania.'
+        });
+        
+        navigate('/');
+      } else {
         toast({
           title: 'Erreur de connexion',
-          description: 'Veuillez remplir tous les champs',
-          variant: 'destructive',
+          description: 'L\'adresse email est invalide.',
+          variant: 'destructive'
         });
-        setIsLoading(false);
-        return;
       }
-
-      // Mock successful login
-      setCurrentPlayer({
-        id: 'user-123',
-        name: email.split('@')[0],
-        avatar: '/placeholder.svg',
-        score: 0,
-        isHost: false,
-        isEliminated: false,
-        email: email,
-        totalScore: 500,
-        gamesPlayed: 24,
-        gamesWon: 7,
-      });
-
+    } catch (error) {
       toast({
-        title: 'Connexion réussie',
-        description: 'Bienvenue sur Les 12 Coups du Web !',
+        title: 'Erreur de connexion',
+        description: 'Vérifiez vos identifiants et réessayez.',
+        variant: 'destructive'
       });
-      
-      navigate('/profile');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
-
+  
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-game-gradient">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-900 via-blue-900 to-violet-800">
       <BackgroundShapes />
       
-      <div className="game-container flex flex-col flex-grow items-center justify-center py-10 md:py-16 z-10">
-        <div className="w-full max-w-md mx-auto">
-          <Card className="bg-white/95 backdrop-blur-sm animate-zoom-in border-accent/50 shadow-lg">
-            <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-2xl font-playfair font-bold text-gradient">Connexion</CardTitle>
-              <CardDescription className="font-poppins">
-                Connectez-vous pour suivre vos statistiques et cumuler des points
-              </CardDescription>
-            </CardHeader>
+      <GameTitle className="mb-8" />
+      
+      <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-white/20">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-center mb-6">Connexion</h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium">
+                Adresse email
+              </label>
+              <GameInput
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="votre@email.com"
+                required
+              />
+            </div>
             
-            <CardContent>
-              <form onSubmit={handleSignIn} className="space-y-4 font-poppins">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email" 
-                    placeholder="votre@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="border-accent/30 focus-visible:ring-primary"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="password" className="text-sm font-medium">
-                      Mot de passe
-                    </label>
-                    <Link to="/forgot-password" className="text-xs text-primary hover:underline">
-                      Mot de passe oublié?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="border-accent/30 focus-visible:ring-primary"
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full button-primary"
-                  disabled={isLoading}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium">
+                  Mot de passe
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-blue-300 hover:text-blue-200 transition"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <LoadingSpinner />
-                      <span className="ml-2">Connexion...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <LogIn className="h-5 w-5 mr-2" />
-                      Se connecter
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-            
-            <CardFooter className="flex flex-col space-y-4 font-poppins">
-              <div className="text-sm text-center text-muted-foreground">
-                Pas encore de compte?{" "}
-                <Link to="/signup" className="text-primary font-medium hover:underline">
-                  Créer un compte
+                  Mot de passe oublié?
                 </Link>
               </div>
-              
-              <Button
-                variant="outline"
-                className="w-full" 
-                onClick={() => navigate('/')}
+              <GameInput
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            
+            <GameButton
+              variant="primary"
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Connexion...' : 'Se connecter'}
+            </GameButton>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <p>
+              Pas encore de compte?{' '}
+              <Link
+                to="/signup"
+                className="text-blue-300 hover:text-blue-200 transition font-medium"
               >
-                <Home className="h-5 w-5 mr-2" />
-                Retour à l'accueil
-              </Button>
-            </CardFooter>
-          </Card>
+                S'inscrire
+              </Link>
+            </p>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
