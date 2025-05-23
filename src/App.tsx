@@ -12,6 +12,7 @@ import WaitingRoom from "./pages/WaitingRoom";
 import QuizRound1 from "./pages/QuizRound1";
 import QuizRound2 from "./pages/QuizRound2";
 import QuizRound3 from "./pages/QuizRound3";
+import DuelPage from "./pages/DuelPage";
 import FinalGrid from "./pages/FinalGrid";
 import ResultsPage from "./pages/ResultsPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/round1/:roomId" element={<QuizRound1 />} />
               <Route path="/round2/:roomId" element={<QuizRound2 />} />
               <Route path="/round3/:roomId" element={<QuizRound3 />} />
+              <Route path="/duel/:roomId/:playerId" element={<DuelPage />} />
               <Route path="/final-grid/:roomId" element={<FinalGrid />} />
               <Route path="/results/:roomId" element={<ResultsPage />} />
               <Route path="/profile" element={<ProfilePage />} />

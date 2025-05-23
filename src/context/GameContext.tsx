@@ -1,119 +1,10 @@
 import React, { createContext, useState, useContext } from 'react';
+import { 
+  Player, PlayerStatus, Badge, Achievement, 
+  Challenge, Question, FinalGridItem, GameMode, CoinTransaction 
+} from './GameTypes';
 
-export type Player = {
-  id: string;
-  name: string;
-  avatar: string;
-  score: number;
-  isHost: boolean;
-  isEliminated: boolean;
-  // Additional properties for authenticated users
-  email?: string;
-  totalScore?: number;
-  gamesPlayed?: number;
-  gamesWon?: number;
-  // Gamification properties
-  level?: number;
-  experience?: number;
-  coins?: number;
-  badges?: Badge[];
-  achievements?: Achievement[];
-  challengesCompleted?: Challenge[];
-  streakDays?: number;
-  lastLoginDate?: string;
-};
-
-// Gamification types
-export type Badge = {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-  earnedAt?: string;
-};
-
-export type Achievement = {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  progress: number;
-  maxProgress: number;
-  completed: boolean;
-  rewardCoins: number;
-  rewardXP: number;
-};
-
-export type Challenge = {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  type: 'daily' | 'weekly' | 'special';
-  progress: number;
-  maxProgress: number;
-  completed: boolean;
-  rewardCoins: number;
-  rewardXP: number;
-  expiresAt?: string;
-};
-
-// Keep existing Question type
-type Question = {
-  id: string;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-  category?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-};
-
-// Keep existing FinalGridItem type
-type FinalGridItem = {
-  id: number;
-  clue: string;
-  image?: string;
-  isRevealed: boolean;
-};
-
-type GameContextType = {
-  players: Player[];
-  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-  currentPlayer: Player | null;
-  setCurrentPlayer: React.Dispatch<React.SetStateAction<Player | null>>;
-  roomId: string | null;
-  setRoomId: React.Dispatch<React.SetStateAction<string | null>>;
-  questions: Question[];
-  setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
-  currentQuestionIndex: number;
-  setCurrentQuestionIndex: React.Dispatch<React.SetStateAction<number>>;
-  currentRound: number;
-  setCurrentRound: React.Dispatch<React.SetStateAction<number>>;
-  gridItems: FinalGridItem[];
-  setGridItems: React.Dispatch<React.SetStateAction<FinalGridItem[]>>;
-  finalAnswer: string;
-  setFinalAnswer: React.Dispatch<React.SetStateAction<string>>;
-  winner: Player | null;
-  setWinner: React.Dispatch<React.SetStateAction<Player | null>>;
-  isAnswering: boolean;
-  setIsAnswering: React.Dispatch<React.SetStateAction<boolean>>;
-  timeRemaining: number;
-  setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
-  addPlayer: (player: Player) => void;
-  updatePlayerScore: (playerId: string, points: number) => void;
-  eliminatePlayer: (playerId: string) => void;
-  resetGame: () => void;
-  // New gamification functions
-  addExperience: (playerId: string, xp: number) => void;
-  addCoins: (playerId: string, coins: number) => void;
-  addBadge: (playerId: string, badge: Badge) => void;
-  updateChallenge: (playerId: string, challengeId: string, progress: number) => void;
-};
-
-const GameContext = createContext<GameContextType | undefined>(undefined);
-
-// Mock data for development
+// Mock questions data for development
 const mockQuestions: Question[] = [
   {
     id: '1',
@@ -180,6 +71,50 @@ const mockGridItems: FinalGridItem[] = [
   { id: 12, clue: 'Manchot', image: '/placeholder.svg', isRevealed: false },
 ];
 
+type GameContextType = {
+  players: Player[];
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+  currentPlayer: Player | null;
+  setCurrentPlayer: React.Dispatch<React.SetStateAction<Player | null>>;
+  roomId: string | null;
+  setRoomId: React.Dispatch<React.SetStateAction<string | null>>;
+  questions: Question[];
+  setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
+  currentQuestionIndex: number;
+  setCurrentQuestionIndex: React.Dispatch<React.SetStateAction<number>>;
+  currentRound: number;
+  setCurrentRound: React.Dispatch<React.SetStateAction<number>>;
+  gridItems: FinalGridItem[];
+  setGridItems: React.Dispatch<React.SetStateAction<FinalGridItem[]>>;
+  finalAnswer: string;
+  setFinalAnswer: React.Dispatch<React.SetStateAction<string>>;
+  winner: Player | null;
+  setWinner: React.Dispatch<React.SetStateAction<Player | null>>;
+  isAnswering: boolean;
+  setIsAnswering: React.Dispatch<React.SetStateAction<boolean>>;
+  timeRemaining: number;
+  setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
+  gameMode: GameMode;
+  setGameMode: React.Dispatch<React.SetStateAction<GameMode>>;
+  playerStatus: Record<string, PlayerStatus>;
+  setPlayerStatus: React.Dispatch<React.SetStateAction<Record<string, PlayerStatus>>>;
+  coinTransactions: CoinTransaction[];
+  setCoinTransactions: React.Dispatch<React.SetStateAction<CoinTransaction[]>>;
+  
+  // Functions
+  addPlayer: (player: Player) => void;
+  updatePlayerScore: (playerId: string, points: number) => void;
+  eliminatePlayer: (playerId: string) => void;
+  resetGame: () => void;
+  updatePlayerStatus: (playerId: string, status: PlayerStatus) => void;
+  addCoins: (playerId: string, amount: number) => void;
+  addExperience: (playerId: string, xp: number) => void;
+  addBadge: (playerId: string, badge: Badge) => void;
+  updateChallenge: (playerId: string, challengeId: string, progress: number) => void;
+};
+
+const GameContext = createContext<GameContextType | undefined>(undefined);
+
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
@@ -192,8 +127,54 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [winner, setWinner] = useState<Player | null>(null);
   const [isAnswering, setIsAnswering] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(10);
+  const [gameMode, setGameMode] = useState<GameMode>('phase_selective');
+  const [playerStatus, setPlayerStatus] = useState<Record<string, PlayerStatus>>({});
+  const [coinTransactions, setCoinTransactions] = useState<CoinTransaction[]>([]);
 
-  // New gamification functions
+  // Update player status (green, orange, red, eliminated)
+  const updatePlayerStatus = (playerId: string, status: PlayerStatus) => {
+    setPlayerStatus(prev => ({
+      ...prev,
+      [playerId]: status
+    }));
+    
+    // If player is eliminated, update that flag too
+    if (status === 'eliminated') {
+      eliminatePlayer(playerId);
+    }
+  };
+
+  // Add coins to a player
+  const addCoins = (playerId: string, amount: number) => {
+    const reason = amount > 0 ? 'Gain' : 'Perte';
+    
+    // Add transaction record
+    setCoinTransactions(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        playerId,
+        amount,
+        reason,
+        timestamp: new Date()
+      }
+    ]);
+    
+    // Update player coins
+    setPlayers(prev => 
+      prev.map(player => {
+        if (player.id === playerId) {
+          return { 
+            ...player,
+            coins: (player.coins || 1000) + amount 
+          };
+        }
+        return player;
+      })
+    );
+  };
+
+  // Add experience
   const addExperience = (playerId: string, xp: number) => {
     setPlayers(prev => 
       prev.map(player => {
@@ -212,7 +193,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             experience: newXP,
             level: newLevel,
             // Give coins reward on level up
-            coins: hasLeveledUp ? (player.coins || 0) + 50 : (player.coins || 0)
+            coins: hasLeveledUp ? (player.coins || 1000) + 50 : (player.coins || 1000)
           };
         }
         return player;
@@ -220,16 +201,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const addCoins = (playerId: string, coins: number) => {
-    setPlayers(prev => 
-      prev.map(player => 
-        player.id === playerId 
-          ? { ...player, coins: (player.coins || 0) + coins }
-          : player
-      )
-    );
-  };
-
+  // Add badge to a player
   const addBadge = (playerId: string, badge: Badge) => {
     setPlayers(prev => 
       prev.map(player => {
@@ -255,6 +227,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  // Update challenge progress
   const updateChallenge = (playerId: string, challengeId: string, progress: number) => {
     setPlayers(prev => 
       prev.map(player => {
@@ -284,7 +257,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return {
               ...player,
               challengesCompleted: updatedChallenges,
-              coins: (player.coins || 0) + challenge.rewardCoins,
+              coins: (player.coins || 1000) + challenge.rewardCoins,
               experience: (player.experience || 0) + challenge.rewardXP
             };
           }
@@ -299,22 +272,32 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  // Add a new player
   const addPlayer = (player: Player) => {
     // Initialize gamification properties if not present
     const enrichedPlayer = {
       ...player,
       level: player.level || 1,
       experience: player.experience || 0,
-      coins: player.coins || 0,
+      coins: player.coins || 1000, // Initialize with 1000 coins
       badges: player.badges || [],
       achievements: player.achievements || [],
       challengesCompleted: player.challengesCompleted || [],
       streakDays: player.streakDays || 0,
       lastLoginDate: player.lastLoginDate || new Date().toISOString().split('T')[0],
+      status: 'green' as PlayerStatus
     };
+    
     setPlayers(prev => [...prev, enrichedPlayer]);
+    
+    // Initialize player status
+    setPlayerStatus(prev => ({
+      ...prev,
+      [enrichedPlayer.id]: 'green'
+    }));
   };
 
+  // Update player score
   const updatePlayerScore = (playerId: string, points: number) => {
     setPlayers(prev => 
       prev.map(player => 
@@ -325,6 +308,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  // Eliminate a player
   const eliminatePlayer = (playerId: string) => {
     setPlayers(prev => 
       prev.map(player => 
@@ -333,8 +317,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           : player
       )
     );
+    
+    // Update player status to eliminated
+    setPlayerStatus(prev => ({
+      ...prev,
+      [playerId]: 'eliminated'
+    }));
   };
 
+  // Reset the game
   const resetGame = () => {
     setPlayers([]);
     setCurrentPlayer(null);
@@ -347,6 +338,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setWinner(null);
     setIsAnswering(false);
     setTimeRemaining(10);
+    setGameMode('phase_selective');
+    setPlayerStatus({});
+    setCoinTransactions([]);
   };
 
   const value = {
@@ -372,13 +366,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAnswering,
     timeRemaining,
     setTimeRemaining,
+    gameMode,
+    setGameMode,
+    playerStatus,
+    setPlayerStatus,
+    coinTransactions,
+    setCoinTransactions,
+    
+    // Functions
     addPlayer,
     updatePlayerScore,
     eliminatePlayer,
     resetGame,
-    // New gamification functions
-    addExperience,
+    updatePlayerStatus,
     addCoins,
+    addExperience,
     addBadge,
     updateChallenge,
   };
@@ -393,3 +395,6 @@ export const useGame = () => {
   }
   return context;
 };
+
+// Re-export types
+export type { Player, Badge, Achievement, Challenge, PlayerStatus };
