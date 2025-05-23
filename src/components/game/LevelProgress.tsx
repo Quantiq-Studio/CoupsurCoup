@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface LevelProgressProps {
   level: number;
   experience: number;
   compact?: boolean;
+  className?: string;
 }
 
-const LevelProgress: React.FC<LevelProgressProps> = ({ level, experience, compact = false }) => {
+const LevelProgress: React.FC<LevelProgressProps> = ({ level, experience, compact = false, className }) => {
   // Calculate XP for current level and next level
   const xpPerLevel = 100;
   const xpForCurrentLevel = (level - 1) * xpPerLevel;
@@ -17,7 +19,10 @@ const LevelProgress: React.FC<LevelProgressProps> = ({ level, experience, compac
   const progressPercentage = Math.floor((currentLevelProgress / xpPerLevel) * 100);
   
   return (
-    <div className={`${compact ? 'p-2' : 'p-4'} bg-white/20 backdrop-blur-sm rounded-lg`}>
+    <div className={cn(
+      `${compact ? 'p-2' : 'p-4'} bg-white/20 backdrop-blur-sm rounded-lg`,
+      className
+    )}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">
           <div className={`${compact ? 'w-8 h-8' : 'w-12 h-12'} rounded-full bg-gradient-to-br from-game-purple to-game-blue flex items-center justify-center text-white font-bold`}>

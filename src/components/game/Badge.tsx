@@ -2,8 +2,9 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Badge as BadgeType } from '@/context/GameContext';
-import { Trophy } from 'lucide-react';
+import { Trophy, Award, Star, Medal } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { badgeImages } from '@/data/avatars';
 
 interface BadgeProps {
   badge: BadgeType;
@@ -19,12 +20,31 @@ const rarityColors = {
   legendary: 'bg-yellow-400'
 };
 
+const rarityIcons = {
+  common: Trophy,
+  uncommon: Award,
+  rare: Star,
+  epic: Medal,
+  legendary: Trophy
+};
+
+const getBadgeIcon = (badge: BadgeType) => {
+  // If we have a custom icon ID, use it to get the badge image
+  if (badge.iconId && badge.iconId <= badgeImages.length) {
+    return badgeImages[badge.iconId - 1];
+  }
+  return null;
+};
+
 const BadgeComponent: React.FC<BadgeProps> = ({ badge, size = 'md', showTooltip = true }) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
     lg: 'w-16 h-16'
   };
+  
+  const IconComponent = rarityIcons[badge.rarity] || Trophy;
+  const badgeImage = getBadgeIcon(badge);
   
   const BadgeIcon = () => (
     <div className={cn(
@@ -33,8 +53,15 @@ const BadgeComponent: React.FC<BadgeProps> = ({ badge, size = 'md', showTooltip 
       sizeClasses[size],
       'relative overflow-hidden'
     )}>
-      {/* Default icon if no custom icon is provided */}
-      <Trophy className="text-white" />
+      {badgeImage ? (
+        <img
+          src={badgeImage}
+          alt={badge.name}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <IconComponent className="text-white" />
+      )}
       
       {/* Badge earned indicator */}
       {badge.earnedAt && (
