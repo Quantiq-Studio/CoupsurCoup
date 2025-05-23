@@ -29,9 +29,12 @@ const rarityIcons = {
 };
 
 const getBadgeIcon = (badge: BadgeType) => {
-  // If we have a custom icon ID, use it to get the badge image
-  if (badge.iconId && badge.iconId <= badgeImages.length) {
-    return badgeImages[badge.iconId - 1];
+  // If we have a custom icon ID in the format "badge-1" to "badge-6", extract the number
+  if (badge.icon && badge.icon.startsWith('badge-')) {
+    const iconNumber = parseInt(badge.icon.split('-')[1], 10);
+    if (!isNaN(iconNumber) && iconNumber <= badgeImages.length) {
+      return badgeImages[iconNumber - 1];
+    }
   }
   return null;
 };

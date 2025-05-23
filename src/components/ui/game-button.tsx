@@ -3,7 +3,7 @@ import React from 'react';
 import { cn } from "@/lib/utils";
 import { Button, ButtonProps } from "@/components/ui/button";
 
-interface GameButtonProps extends ButtonProps {
+interface GameButtonProps extends Omit<ButtonProps, 'variant'> {
   variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost';
 }
 
@@ -13,6 +13,24 @@ export const GameButton: React.FC<GameButtonProps> = ({
   children,
   ...props
 }) => {
+  // Map our custom game variants to shadcn button variants
+  const getButtonVariant = (): ButtonProps['variant'] => {
+    switch (variant) {
+      case 'primary':
+        return 'default';
+      case 'secondary':
+        return 'secondary';
+      case 'accent':
+        return 'destructive'; // Using destructive as our accent
+      case 'outline':
+        return 'outline';
+      case 'ghost':
+        return 'ghost';
+      default:
+        return 'default';
+    }
+  };
+
   const baseClasses = {
     'primary': 'button-primary',
     'secondary': 'button-secondary',
@@ -23,6 +41,7 @@ export const GameButton: React.FC<GameButtonProps> = ({
 
   return (
     <Button 
+      variant={getButtonVariant()}
       className={cn(baseClasses[variant], className)}
       {...props}
     >
