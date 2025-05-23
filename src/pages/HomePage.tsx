@@ -112,7 +112,7 @@ const HomePage: React.FC = () => {
           className="mb-8 animate-bounce-in"
           subtitle="Testez vos connaissances dans ce quiz multijoueur inspiré du jeu TV !"
         >
-          Les 12 Coups du Web
+          Le Coup sur Coup
         </GameTitle>
 
         <div className="w-full max-w-md mx-auto">

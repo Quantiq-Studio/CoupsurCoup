@@ -38,7 +38,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       {showHomeButton && (
         <Button 
           variant="outline"
-          className="bg-white/20 hover:bg-white/30 text-white"
+          className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
           onClick={() => navigate('/')}
         >
           <Home className="h-5 w-5 mr-2" />
@@ -51,7 +51,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <div className="flex items-center gap-3">
             <Button 
               variant="outline"
-              className="bg-white/20 hover:bg-white/30 text-white"
+              className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
               onClick={() => navigate('/profile')}
             >
               <Avatar className="h-6 w-6 mr-2">
@@ -63,7 +63,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             
             <Button 
               variant="outline"
-              className="bg-white/20 hover:bg-white/30 text-white"
+              className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5 mr-2" />
@@ -74,7 +74,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <>
             <Button 
               variant="outline"
-              className="bg-white/20 hover:bg-white/30 text-white"
+              className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
               onClick={() => navigate('/signin')}
             >
               <LogIn className="h-5 w-5 mr-2" />
@@ -82,7 +82,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </Button>
             <Button 
               variant="outline"
-              className="bg-white/20 hover:bg-white/30 text-white"
+              className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
               onClick={() => navigate('/signup')}
             >
               <User className="h-5 w-5 mr-2" />

@@ -53,7 +53,7 @@ const SignInPage: React.FC = () => {
 
       toast({
         title: 'Connexion réussie',
-        description: 'Bienvenue sur Les 12 Coups du Web !',
+        description: 'Bienvenue dans le Coup sur Coup !',
       });
       
       navigate('/profile');

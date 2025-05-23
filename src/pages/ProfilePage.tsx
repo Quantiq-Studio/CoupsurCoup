@@ -72,7 +72,7 @@ const ProfilePage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <Button 
             variant="outline" 
-            className="bg-white/20 hover:bg-white/30"
+            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home className="h-5 w-5 mr-2" />
@@ -84,7 +84,7 @@ const ProfilePage: React.FC = () => {
           <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white">Mon profil</h1>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Profile Card */}
           <Card className="bg-white/95 backdrop-blur-sm animate-zoom-in shadow-lg border-accent/50 md:col-span-1">
             <CardHeader className="flex flex-col items-center text-center">

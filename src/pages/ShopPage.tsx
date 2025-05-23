@@ -89,7 +89,7 @@ const ShopPage: React.FC = () => {
   
   if (!currentPlayer) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-game-gradient">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-game-gradient text-white">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Connectez-vous</h1>
           <p className="mb-6">Vous devez être connecté pour accéder à la boutique</p>
@@ -107,7 +107,7 @@ const ShopPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <Button 
             variant="outline" 
-            className="bg-white/20 hover:bg-white/30"
+            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home className="h-5 w-5 mr-2" />

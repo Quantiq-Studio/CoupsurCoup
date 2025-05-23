@@ -105,7 +105,7 @@ const LeaderboardPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <Button 
             variant="outline" 
-            className="bg-white/20 hover:bg-white/30"
+            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home className="h-5 w-5 mr-2" />
@@ -115,7 +115,7 @@ const LeaderboardPage: React.FC = () => {
 
         <div className="text-center mb-8 animate-bounce-in">
           <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white">Classement</h1>
-          <p className="text-xl text-white/80">Les meilleurs joueurs des 12 Coups du Web</p>
+          <p className="text-xl text-white/80">Les meilleurs joueurs du Coup sur Coup</p>
         </div>
         
         <Tabs

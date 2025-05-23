@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import CopyToClipboard from '@/components/game/CopyToClipboard';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
 import { HomeIcon, PlayIcon, TimerIcon, User, AlertTriangle } from 'lucide-react';
+import {GameTitle} from "@/components/ui/game-title.tsx";
 
 // Mock players for development
 const mockPlayers = [
@@ -84,26 +85,28 @@ const WaitingRoom: React.FC = () => {
       <div className="game-container flex flex-col flex-grow py-8">
         <div className="flex justify-between items-center mb-8">
           <Button 
-            variant="outline" 
-            className="bg-white/20 hover:bg-white/30"
+            variant="outline"
+            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
             onClick={() => navigate('/')}
           >
             <HomeIcon className="h-5 w-5 mr-2" />
             Quitter
           </Button>
           
-          <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
             <User className="h-4 w-4" />
             <span className="font-medium">{playerCount} en ligne</span>
           </div>
         </div>
 
         <div className="text-center mb-8 animate-bounce-in">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Salle d'attente</h1>
+          <GameTitle>
+            Salle d'attente
+          </GameTitle>
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <p className="text-xl">Code de la salle:</p>
+            <p className="text-xl text-white">Code de la salle:</p>
             <div className="flex items-center gap-2">
-              <div className="bg-white/20 py-2 px-6 rounded-lg font-mono text-xl font-bold tracking-wider">
+              <div className="bg-white/20 py-2 px-6 rounded-lg font-mono text-xl font-bold tracking-wider text-white">
                 {roomId}
               </div>
               <CopyToClipboard text={roomId || ''} />
@@ -114,12 +117,12 @@ const WaitingRoom: React.FC = () => {
         {isLoading ? (
           <div className="flex-grow flex flex-col items-center justify-center">
             <LoadingSpinner />
-            <p className="mt-4 text-lg">Chargement des joueurs...</p>
+            <p className="mt-4 text-lg text-white">Chargement des joueurs...</p>
           </div>
         ) : (
           <>
             <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8 animate-zoom-in">
-              <h2 className="text-xl font-medium mb-4 flex items-center">
+              <h2 className="text-xl font-medium mb-4 flex items-center text-white">
                 <User className="h-5 w-5 mr-2" />
                 Joueurs connectés ({players.length})
               </h2>
@@ -136,7 +139,7 @@ const WaitingRoom: React.FC = () => {
                       <AvatarImage src={player.avatar} alt={player.name} />
                       <AvatarFallback>{player.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <p className="font-medium text-center">{player.name}</p>
+                    <p className="font-medium text-center text-white">{player.name}</p>
                     {player.isHost && (
                       <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>
                     )}
@@ -156,11 +159,11 @@ const WaitingRoom: React.FC = () => {
             </div>
 
             <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8">
-              <h2 className="text-xl font-medium mb-4 flex items-center">
+              <h2 className="text-xl font-medium mb-4 flex items-center text-white">
                 <TimerIcon className="h-5 w-5 mr-2" />
                 En attendant...
               </h2>
-              <p>
+              <p className="text-white">
                 Préparez-vous à affronter d'autres joueurs dans une série d'épreuves de 
                 connaissances ! Le dernier joueur restant aura l'honneur d'accéder à 
                 l'épreuve finale : La Grille des Indices !
@@ -181,7 +184,7 @@ const WaitingRoom: React.FC = () => {
                   }
                 </Button>
               ) : (
-                <div className="animate-pulse">
+                <div className="animate-pulse text-white">
                   <p>En attente du lancement par l'hôte...</p>
                 </div>
               )}

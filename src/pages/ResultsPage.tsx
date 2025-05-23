@@ -26,8 +26,8 @@ const ResultsPage: React.FC = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Les 12 Coups du Web',
-        text: `Je viens de jouer aux 12 Coups du Web et ${winner ? `${winner.name} a gagné` : 'nous avons tous perdu'} !`,
+        title: 'Le Coup sur Coup',
+        text: `Je viens de jouer aux Coup sur Coup et ${winner ? `${winner.name} a gagné` : 'nous avons tous perdu'} !`,
         url: window.location.origin,
       }).catch((error) => {
         console.log('Error sharing:', error);
@@ -74,7 +74,7 @@ const ResultsPage: React.FC = () => {
       <div className="game-container flex flex-col flex-grow py-8 z-20">
         <div className="text-center mb-12 animate-bounce-in">
           <h1 className="text-4xl md:text-6xl font-bold mb-4">Fin de la partie !</h1>
-          <p className="text-xl">Merci d'avoir participé aux 12 Coups du Web</p>
+          <p className="text-xl">Merci d'avoir participé aux Coup sur Coup</p>
         </div>
         
         {winner && (

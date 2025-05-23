@@ -34,7 +34,7 @@ export const GameTitle: React.FC<GameTitleProps> = ({
         </div>
       )}
       
-      <h1 className="text-3xl md:text-4xl font-bold text-shadow font-playfair">
+      <h1 className="text-3xl md:text-4xl font-bold text-shadow text-white font-playfair">
         {children}
       </h1>
       

@@ -149,27 +149,15 @@ const QuizRound1: React.FC = () => {
         // Show notification for status change to orange
         setShowStatusChangeNotification({playerId, status: 'orange'});
         
-        toast({
-          title: "Attention !",
-          description: `${getPlayerById(playerId)?.name} est maintenant en alerte.`,
-          variant: "warning",
-        });
-        
       } else if (currentStatus === 'orange') {
         newStatus = 'red';
         
         // Show notification for status change to red
         setShowStatusChangeNotification({playerId, status: 'red'});
         
-        toast({
-          title: "Danger !",
-          description: `${getPlayerById(playerId)?.name} est en zone rouge.`,
-          variant: "destructive",
-        });
-        
         // Trigger duel notification
         setDuelPlayerId(playerId);
-        setShowDuelNotification(true);
+        setShowDuelNotification(false);
       }
       
       return { ...prev, [playerId]: newStatus };

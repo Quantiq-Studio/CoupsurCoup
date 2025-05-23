@@ -145,7 +145,7 @@ const ChallengesPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <Button 
             variant="outline" 
-            className="bg-white/20 hover:bg-white/30"
+            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home className="h-5 w-5 mr-2" />
