@@ -61,6 +61,7 @@ const SignUpPage: React.FC = () => {
         totalScore: 0,
         gamesPlayed: 0,
         gamesWon: 0,
+        coins: 1000 // Added the missing coins property
       });
 
       toast({

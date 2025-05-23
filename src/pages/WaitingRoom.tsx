@@ -11,9 +11,9 @@ import { HomeIcon, PlayIcon, TimerIcon, User, AlertTriangle } from 'lucide-react
 
 // Mock players for development
 const mockPlayers = [
-  { id: '1', name: 'Alice', avatar: '/placeholder.svg', score: 0, isHost: true, isEliminated: false },
-  { id: '2', name: 'Bob', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false },
-  { id: '3', name: 'Charlie', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false },
+  { id: '1', name: 'Alice', avatar: '/placeholder.svg', score: 0, isHost: true, isEliminated: false, coins: 1000 },
+  { id: '2', name: 'Bob', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false, coins: 1000 },
+  { id: '3', name: 'Charlie', avatar: '/placeholder.svg', score: 0, isHost: false, isEliminated: false, coins: 1000 },
 ];
 
 const MIN_PLAYERS = 4;

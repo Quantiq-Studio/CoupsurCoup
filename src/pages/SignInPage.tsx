@@ -48,6 +48,7 @@ const SignInPage: React.FC = () => {
         totalScore: 500,
         gamesPlayed: 24,
         gamesWon: 7,
+        coins: 1000 // Added the missing coins property
       });
 
       toast({

@@ -8,7 +8,7 @@ interface GameNotificationProps {
   title: string;
   message: string;
   icon?: LucideIcon;
-  variant?: 'default' | 'success' | 'warning' | 'error';
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'destructive';
   onClose?: () => void;
   timestamp?: string;
   className?: string;
@@ -27,14 +27,16 @@ export const GameNotification: React.FC<GameNotificationProps> = ({
     default: 'bg-white/20 border-accent/40',
     success: 'bg-green-500/20 border-green-500/40',
     warning: 'bg-yellow-500/20 border-yellow-500/40',
-    error: 'bg-red-500/20 border-red-500/40'
+    error: 'bg-red-500/20 border-red-500/40',
+    destructive: 'bg-red-500/20 border-red-500/40'
   };
   
   const iconColors = {
     default: 'text-accent',
     success: 'text-green-500',
     warning: 'text-yellow-500',
-    error: 'text-red-500'
+    error: 'text-red-500',
+    destructive: 'text-red-500'
   };
   
   return (
