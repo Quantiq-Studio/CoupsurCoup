@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
@@ -37,12 +38,7 @@ const QuizRound1: React.FC = () => {
   const [showDuelNotification, setShowDuelNotification] = useState(false);
   const [duelPlayerId, setDuelPlayerId] = useState<string | null>(null);
   
-  // Safely get the current question or provide a fallback
-  const currentQuestion = questions && questions.length > currentQuestionIndex
-    ? questions[currentQuestionIndex]
-    : null;
-
-  // Filter out eliminated players
+  const currentQuestion = questions[currentQuestionIndex];
   const activePlayers = players.filter(p => !p.isEliminated);
   
   // Initialize player statuses
@@ -132,14 +128,11 @@ const QuizRound1: React.FC = () => {
       return;
     }
     
-    // Move to next question if it exists, otherwise stay at the last one
-    const nextIndex = currentQuestionIndex + 1;
-    if (nextIndex < questions.length) {
-      setCurrentQuestionIndex(nextIndex);
-    }
+    // Move to next question
+    setCurrentQuestionIndex(currentQuestionIndex + 1);
     
     // Find next active player
-    if (activePlayerId && activePlayers.length > 0) {
+    if (activePlayerId) {
       const currentIndex = activePlayers.findIndex(p => p.id === activePlayerId);
       const nextIndex = (currentIndex + 1) % activePlayers.length;
       setActivePlayerId(activePlayers[nextIndex].id);
@@ -149,14 +142,12 @@ const QuizRound1: React.FC = () => {
   // Handle moving to duel mode
   const handleStartDuel = () => {
     setShowDuelNotification(false);
-    if (roomId && duelPlayerId) {
-      navigate(`/duel/${roomId}/${duelPlayerId}`);
-    }
+    navigate(`/duel/${roomId}/${duelPlayerId}`);
   };
   
   // Handle option selection
   const handleOptionSelect = (optionIndex: number) => {
-    if (showResult || selectedOption !== null || !activePlayerId || !currentQuestion) return;
+    if (showResult || selectedOption !== null || !activePlayerId) return;
     
     setSelectedOption(optionIndex);
     setShowResult(true);
@@ -191,19 +182,6 @@ const QuizRound1: React.FC = () => {
   // Get active player
   const activePlayer = activePlayerId ? getPlayerById(activePlayerId) : null;
   
-  // If questions are not yet loaded or there's an error
-  if (!questions || questions.length === 0) {
-    return (
-      <div className="min-h-screen bg-game-gradient flex flex-col items-center justify-center p-4">
-        <GameNotification 
-          title="Chargement..." 
-          message="Préparation des questions en cours." 
-          variant="default"
-        />
-      </div>
-    );
-  }
-  
   return (
     <div className="min-h-screen bg-game-gradient flex flex-col">
       <div className="game-container flex flex-col flex-grow py-8">
@@ -230,7 +208,7 @@ const QuizRound1: React.FC = () => {
           <div className="mb-6 animate-bounce-in">
             <GameNotification
               title="Duel Décisif!"
-              message={`${getPlayerById(duelPlayerId)?.name || 'Un joueur'} doit affronter un adversaire en duel!`}
+              message={`${getPlayerById(duelPlayerId)?.name} doit affronter un adversaire en duel!`}
               variant="warning"
               icon={AlertCircle}
               className="mb-4"
@@ -292,7 +270,7 @@ const QuizRound1: React.FC = () => {
                 ))}
               </div>
               
-              {showResult && currentQuestion && !showDuelNotification && (
+              {showResult && !showDuelNotification && (
                 <div className="mt-6 text-center animate-bounce-in">
                   {selectedOption === currentQuestion.correctAnswer ? (
                     <div>

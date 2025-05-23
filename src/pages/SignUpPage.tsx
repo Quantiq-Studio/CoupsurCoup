@@ -1,158 +1,184 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { GameTitle } from '@/components/ui/game-title';
-import { GameInput } from '@/components/ui/game-input';
-import { GameButton } from '@/components/ui/game-button';
-import { Card } from '@/components/ui/card';
+import { useNavigate, Link } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
-import BackgroundShapes from '@/components/game/BackgroundShapes';
-import AvatarSelector from '@/components/game/AvatarSelector';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { avatarImages } from '@/data/avatars';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { LogIn, UserPlus, Home } from 'lucide-react';
+import BackgroundShapes from '@/components/game/BackgroundShapes';
+import LoadingSpinner from '@/components/game/LoadingSpinner';
+import AvatarSelector from '@/components/game/AvatarSelector';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setCurrentPlayer } = useGame();
   
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState(avatarImages[0]);
+  const [username, setUsername] = useState('');
+  const [avatar, setAvatar] = useState<string>('/placeholder.svg');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+
+  const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    try {
-      // Simulate API call for registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, auto-login after signup
-      if (name && email.includes('@') && password.length >= 6) {
-        // Create a mock authenticated user
-        setCurrentPlayer({
-          id: 'user-' + Date.now(),
-          name: name,
-          avatar: selectedAvatar,
-          score: 0,
-          isHost: false,
-          isEliminated: false,
-          email: email,
-          totalScore: 0,
-          gamesPlayed: 0,
-          gamesWon: 0,
-          coins: 1000
-        });
-        
-        toast({
-          title: 'Inscription réussie!',
-          description: 'Bienvenue sur QuizMania.'
-        });
-        
-        navigate('/');
-      } else {
+    // Simulate sign up process
+    setTimeout(() => {
+      // Basic validation
+      if (!email || !password || !username) {
         toast({
           title: 'Erreur d\'inscription',
-          description: 'Veuillez vérifier vos informations.',
-          variant: 'destructive'
+          description: 'Veuillez remplir tous les champs',
+          variant: 'destructive',
         });
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      toast({
-        title: 'Erreur d\'inscription',
-        description: 'Une erreur est survenue. Veuillez réessayer.',
-        variant: 'destructive'
+
+      if (password.length < 6) {
+        toast({
+          title: 'Mot de passe trop court',
+          description: 'Le mot de passe doit contenir au moins 6 caractères',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Mock successful registration
+      setCurrentPlayer({
+        id: 'user-' + Math.random().toString(36).substring(2, 10),
+        name: username,
+        avatar: avatar,
+        score: 0,
+        isHost: false,
+        isEliminated: false,
+        email: email,
+        totalScore: 0,
+        gamesPlayed: 0,
+        gamesWon: 0,
       });
-    } finally {
+
+      toast({
+        title: 'Inscription réussie',
+        description: 'Bienvenue sur Les 12 Coups du Web !',
+      });
+      
+      navigate('/profile');
       setIsLoading(false);
-    }
+    }, 1500);
   };
-  
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-900 via-blue-900 to-violet-800">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-game-gradient">
       <BackgroundShapes />
       
-      <GameTitle className="mb-8">QuizMania</GameTitle>
-      
-      <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-white/20">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-center mb-6">Créer un compte</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium">
-                Nom d'utilisateur
-              </label>
-              <GameInput
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Votre pseudo"
-                required
-              />
-            </div>
+      <div className="game-container flex flex-col flex-grow items-center justify-center py-10 md:py-16 z-10">
+        <div className="w-full max-w-md mx-auto">
+          <Card className="bg-white/95 backdrop-blur-sm animate-zoom-in border-accent/50 shadow-lg">
+            <CardHeader className="space-y-1 text-center">
+              <CardTitle className="text-2xl font-bold text-gradient">Créer un compte</CardTitle>
+              <CardDescription>
+                Inscrivez-vous pour suivre vos statistiques et cumuler des points
+              </CardDescription>
+            </CardHeader>
             
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Choisissez un avatar
-              </label>
-              <AvatarSelector selectedAvatar={selectedAvatar} onSelect={setSelectedAvatar} />
-            </div>
+            <CardContent>
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="border-accent/30 focus-visible:ring-primary"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="username" className="text-sm font-medium">
+                    Pseudo
+                  </label>
+                  <Input
+                    id="username"
+                    placeholder="Votre pseudo"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="border-accent/30 focus-visible:ring-primary"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="avatar" className="text-sm font-medium">
+                    Choisissez votre avatar
+                  </label>
+                  <AvatarSelector onSelect={setAvatar} selectedAvatar={avatar} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Mot de passe
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="border-accent/30 focus-visible:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Minimum 6 caractères
+                  </p>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full button-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <LoadingSpinner />
+                      <span className="ml-2">Création du compte...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <UserPlus className="h-5 w-5 mr-2" />
+                      S'inscrire
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
             
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium">
-                Adresse email
-              </label>
-              <GameInput
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="votre@email.com"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium">
-                Mot de passe
-              </label>
-              <GameInput
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 6 caractères"
-                required
-              />
-            </div>
-            
-            <GameButton
-              variant="primary"
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Création...' : 'Créer un compte'}
-            </GameButton>
-          </form>
-          
-          <div className="mt-6 text-center">
-            <p>
-              Déjà un compte?{' '}
-              <Link
-                to="/signin"
-                className="text-blue-300 hover:text-blue-200 transition font-medium"
+            <CardFooter className="flex flex-col space-y-4">
+              <div className="text-sm text-center text-muted-foreground">
+                Déjà un compte?{" "}
+                <Link to="/signin" className="text-primary font-medium hover:underline">
+                  Se connecter
+                </Link>
+              </div>
+              
+              <Button
+                variant="outline"
+                className="w-full" 
+                onClick={() => navigate('/')}
               >
-                Se connecter
-              </Link>
-            </p>
-          </div>
+                <Home className="h-5 w-5 mr-2" />
+                Retour à l'accueil
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

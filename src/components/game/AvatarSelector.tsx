@@ -1,26 +1,33 @@
 
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { avatarImages } from '@/data/avatars';
 
 interface AvatarSelectorProps {
   onSelect: (avatar: string) => void;
-  selectedAvatar?: string;
-  selected?: string; // Added for backwards compatibility
+  selectedAvatar: string;
 }
 
-const AvatarSelector: React.FC<AvatarSelectorProps> = ({ onSelect, selectedAvatar, selected }) => {
-  // Use selectedAvatar if provided, otherwise fall back to selected prop
-  const activeAvatar = selectedAvatar || selected || avatarImages[0];
+const AvatarSelector: React.FC<AvatarSelectorProps> = ({ onSelect, selectedAvatar }) => {
+  // Mock avatar options - in a real app, you'd use actual avatars
+  const avatarOptions = [
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+  ];
   
   return (
     <div className="grid grid-cols-4 gap-3">
-      {avatarImages.map((avatar, index) => (
+      {avatarOptions.map((avatar, index) => (
         <div 
           key={index}
           onClick={() => onSelect(avatar)}
           className={`cursor-pointer transition-all duration-200 ${
-            activeAvatar === avatar 
+            selectedAvatar === avatar 
               ? 'scale-110 ring-2 ring-primary ring-offset-2' 
               : 'hover:scale-105'
           }`}
