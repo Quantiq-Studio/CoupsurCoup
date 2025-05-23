@@ -15,6 +15,7 @@ interface PlayerStatusProps {
   status?: PlayerStatus;
   compact?: boolean;
   onClick?: () => void;
+  showHost?: boolean; // Added missing prop
 }
 
 const PlayerStatus: React.FC<PlayerStatusProps> = ({
@@ -24,7 +25,8 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
   coinChange = 0,
   status = 'green',
   compact = false,
-  onClick
+  onClick,
+  showHost = true // Default to true to maintain existing behavior
 }) => {
   // Status colors
   const statusColors = {
@@ -76,7 +78,7 @@ const PlayerStatus: React.FC<PlayerStatusProps> = ({
             compact ? "text-sm" : "text-base"
           )}>
             {player.name}
-            {player.isHost && <span className="text-xs ml-1">(H)</span>}
+            {showHost && player.isHost && <span className="text-xs ml-1">(H)</span>}
           </p>
           
           {!compact && (

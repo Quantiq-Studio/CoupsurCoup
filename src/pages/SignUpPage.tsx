@@ -9,6 +9,7 @@ import { useGame } from '@/context/GameContext';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import AvatarSelector from '@/components/game/AvatarSelector';
 import { useToast } from '@/hooks/use-toast';
+import { avatarImages } from '@/data/avatars';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const SignUpPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('/avatars/avatar-1.png');
+  const [selectedAvatar, setSelectedAvatar] = useState(avatarImages[0]);
   const [isLoading, setIsLoading] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,7 +99,7 @@ const SignUpPage: React.FC = () => {
               <label className="block text-sm font-medium">
                 Choisissez un avatar
               </label>
-              <AvatarSelector selected={selectedAvatar} onSelect={setSelectedAvatar} />
+              <AvatarSelector selectedAvatar={selectedAvatar} onSelect={setSelectedAvatar} />
             </div>
             
             <div className="space-y-2">

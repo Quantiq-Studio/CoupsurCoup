@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
@@ -9,6 +10,7 @@ import { GameInput } from '@/components/ui/game-input';
 import CopyToClipboard from '@/components/game/CopyToClipboard';
 import PlayerStatus from '@/components/game/PlayerStatus';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
+import { avatarImages } from '@/data/avatars';
 
 const WaitingRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -16,7 +18,7 @@ const WaitingRoom: React.FC = () => {
   const { players, addPlayer, setCurrentPlayer, setRoomId } = useGame();
   
   const [playerName, setPlayerName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('/avatars/avatar-1.png');
+  const [selectedAvatar, setSelectedAvatar] = useState(avatarImages[0]);
   const [joined, setJoined] = useState(false);
   
   useEffect(() => {
@@ -58,7 +60,7 @@ const WaitingRoom: React.FC = () => {
       <BackgroundShapes />
       
       <div className="container mx-auto px-4 py-8">
-        <GameHeader showHomeButton={true} />
+        <GameHeader showHomeButton />
         
         <div className="max-w-4xl mx-auto">
           <Card className="bg-white/10 backdrop-blur-sm border-white/20 overflow-hidden">
@@ -87,7 +89,7 @@ const WaitingRoom: React.FC = () => {
                   <div className="space-y-2">
                     <label className="block text-sm font-medium">Choisissez un avatar</label>
                     <AvatarSelector 
-                      selected={selectedAvatar}
+                      selectedAvatar={selectedAvatar}
                       onSelect={setSelectedAvatar}
                     />
                   </div>
@@ -125,8 +127,7 @@ const WaitingRoom: React.FC = () => {
                     <PlayerStatus 
                       key={player.id}
                       player={player}
-                      showHost
-                      showCoins
+                      showCoins={true}
                     />
                   ))}
                 </div>
