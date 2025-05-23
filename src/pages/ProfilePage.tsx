@@ -11,6 +11,7 @@ import LoadingSpinner from '@/components/game/LoadingSpinner';
 import GamificationSummary from '@/components/game/GamificationSummary';
 import LevelProgress from '@/components/game/LevelProgress';
 import { Award, BarChart, Calendar, Coins, Home, LogOut, Medal, ShoppingBag, Trophy, User } from 'lucide-react';
+import {account} from "@/lib/appwrite.ts";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,8 @@ const ProfilePage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [currentPlayer, navigate, toast]);
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await account.deleteSession('current');
     setCurrentPlayer(null);
     toast({
       title: "Déconnecté",

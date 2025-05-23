@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GameProvider } from "./context/GameContext";
+import { useAuthRestore } from './hooks/useAuthRestore';
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -62,5 +63,10 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+const AuthRestorer = () => {
+  useAuthRestore();
+  return null;
+};
 
 export default App;

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
@@ -10,6 +9,7 @@ import { LogIn, UserPlus, Home } from 'lucide-react';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
 import AvatarSelector from '@/components/game/AvatarSelector';
+import {account, databases} from "@/lib/appwrite.ts";
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,13 +22,11 @@ const SignUpPage: React.FC = () => {
   const [avatar, setAvatar] = useState<string>('/placeholder.svg');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate sign up process
-    setTimeout(() => {
-      // Basic validation
+
+    try {
       if (!email || !password || !username) {
         toast({
           title: 'Erreur d\'inscription',
@@ -39,39 +37,51 @@ const SignUpPage: React.FC = () => {
         return;
       }
 
-      if (password.length < 6) {
-        toast({
-          title: 'Mot de passe trop court',
-          description: 'Le mot de passe doit contenir au moins 6 caractères',
-          variant: 'destructive',
-        });
-        setIsLoading(false);
-        return;
-      }
+      await account.create('unique()', email, password, username);
+      await account.createEmailPasswordSession(email, password);
+      const user = await account.get();
 
-      // Mock successful registration
+      await databases.createDocument(
+          '68308ece00320290574e',
+          '68308f130020e76ceeec',
+          user.$id,
+          {
+            name: user.name,
+            avatar: avatar,
+            isBot: false,
+            coins: 1000,
+            score: 0,
+            level: 1,
+            experience: 0,
+          }
+      );
+
       setCurrentPlayer({
-        id: 'user-' + Math.random().toString(36).substring(2, 10),
-        name: username,
+        id: user.$id,
+        name: user.name,
         avatar: avatar,
         score: 0,
         isHost: false,
         isEliminated: false,
-        email: email,
+        email: user.email,
         totalScore: 0,
         gamesPlayed: 0,
         gamesWon: 0,
-        coins: 1000 // Added the missing coins property
+        coins: 1000,
       });
 
-      toast({
-        title: 'Inscription réussie',
-        description: 'Bienvenue sur Le Coup sur Coup !',
-      });
-      
+      toast({ title: 'Inscription réussie', description: 'Bienvenue sur Le Coup sur Coup !' });
       navigate('/profile');
-      setIsLoading(false);
-    }, 1500);
+
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+
+    setIsLoading(false);
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { LogIn, UserPlus, Home } from 'lucide-react';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
+import {account} from "@/lib/appwrite.ts";
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,46 +19,40 @@ const SignInPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate sign in process
-    setTimeout(() => {
-      // Basic validation
-      if (!email || !password) {
-        toast({
-          title: 'Erreur de connexion',
-          description: 'Veuillez remplir tous les champs',
-          variant: 'destructive',
-        });
-        setIsLoading(false);
-        return;
-      }
 
-      // Mock successful login
+    try {
+      await account.createEmailPasswordSession(email, password);
+      const user = await account.get();
+
       setCurrentPlayer({
-        id: 'user-123',
-        name: email.split('@')[0],
+        id: user.$id,
+        name: user.name,
         avatar: '/placeholder.svg',
         score: 0,
         isHost: false,
         isEliminated: false,
-        email: email,
-        totalScore: 500,
-        gamesPlayed: 24,
-        gamesWon: 7,
-        coins: 1000 // Added the missing coins property
+        email: user.email,
+        totalScore: 0,
+        gamesPlayed: 0,
+        gamesWon: 0,
+        coins: 1000,
       });
 
-      toast({
-        title: 'Connexion réussie',
-        description: 'Bienvenue dans le Coup sur Coup !',
-      });
-      
+      toast({ title: 'Connexion réussie', description: 'Bienvenue dans le Coup sur Coup !' });
       navigate('/profile');
-      setIsLoading(false);
-    }, 1500);
+
+    } catch (error: any) {
+      toast({
+        title: 'Erreur de connexion',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+
+    setIsLoading(false);
   };
 
   return (

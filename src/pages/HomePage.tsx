@@ -11,7 +11,7 @@ import { GameInput } from '@/components/ui/game-input';
 import { GameButton } from '@/components/ui/game-button';
 import { GameCard } from '@/components/ui/game-card';
 import { GameAvatar } from '@/components/ui/game-avatar';
-import { getRandomAvatar } from '@/data/avatars';
+import {account} from "@/lib/appwrite.ts";
 
 const generateRoomId = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
   const { currentPlayer, setCurrentPlayer, setRoomId } = useGame();
   
   const [name, setName] = useState<string>('');
-  const [avatar, setAvatar] = useState<string>(getRandomAvatar());
+  const [avatar, setAvatar] = useState<string>("");
   const [joinRoomId, setJoinRoomId] = useState<string>('');
   const [showJoinForm, setShowJoinForm] = useState<boolean>(false);
 
@@ -37,7 +37,16 @@ const HomePage: React.FC = () => {
     }
   }, [currentPlayer]);
 
-  const handleCreateRoom = () => {
+  const ensureSession = async () => {
+    try {
+      await account.get();
+    } catch {
+      // Si aucune session n'existe, on en crée une anonyme
+      await account.createAnonymousSession();
+    }
+  };
+
+  const handleCreateRoom = async () => {
     if (name.trim() === '') {
       toast({
         title: 'Nom requis',
@@ -46,7 +55,9 @@ const HomePage: React.FC = () => {
       });
       return;
     }
-    
+
+    await ensureSession();
+
     const roomId = generateRoomId();
     const player = {
       id: currentPlayer?.id || Math.random().toString(36).substring(2, 10),
@@ -63,7 +74,7 @@ const HomePage: React.FC = () => {
     navigate(`/waiting-room/${roomId}`);
   };
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (name.trim() === '') {
       toast({
         title: 'Nom requis',
@@ -81,7 +92,9 @@ const HomePage: React.FC = () => {
       });
       return;
     }
-    
+
+    await ensureSession();
+
     const player = {
       id: currentPlayer?.id || Math.random().toString(36).substring(2, 10),
       name,
@@ -89,7 +102,7 @@ const HomePage: React.FC = () => {
       score: 0,
       isHost: false,
       isEliminated: false,
-      ...currentPlayer, // Keep existing player data if logged in
+      ...currentPlayer,
     };
     
     setCurrentPlayer(player);
