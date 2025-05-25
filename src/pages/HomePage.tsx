@@ -11,7 +11,11 @@ import { GameInput } from '@/components/ui/game-input';
 import { GameButton } from '@/components/ui/game-button';
 import { GameCard } from '@/components/ui/game-card';
 import { GameAvatar } from '@/components/ui/game-avatar';
-import {account} from "@/lib/appwrite.ts";
+import {account, databases} from "@/lib/appwrite.ts";
+import {ID, Query} from "appwrite";
+
+const GAMES_COLLECTION_ID = '68308f180030b8019d46';
+const DATABASE_ID = '68308ece00320290574e';
 
 const generateRoomId = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -59,16 +63,43 @@ const HomePage: React.FC = () => {
     await ensureSession();
 
     const roomId = generateRoomId();
+    const hostId = currentPlayer?.id || ID.unique();
+
     const player = {
-      id: currentPlayer?.id || Math.random().toString(36).substring(2, 10),
+      id: hostId,
       name,
       avatar,
       score: 0,
       isHost: true,
       isEliminated: false,
-      ...currentPlayer, // Keep existing player data if logged in
+      ...currentPlayer,
     };
-    
+
+    // Crée un document `game`
+    try {
+      await databases.createDocument(
+          DATABASE_ID,
+          GAMES_COLLECTION_ID,
+          roomId,
+          {
+            roomId,
+            hostId,
+            playerIds: [hostId],
+            status: 'waiting',
+            round: 0,
+            createdAt: new Date().toISOString(),
+          }
+      );
+    } catch (err: any) {
+      console.error('Erreur création de game :', err);
+      toast({
+        title: 'Erreur serveur',
+        description: 'Impossible de créer la partie. Réessaye.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setCurrentPlayer(player);
     setRoomId(roomId);
     navigate(`/waiting-room/${roomId}`);
@@ -104,6 +135,22 @@ const HomePage: React.FC = () => {
       isEliminated: false,
       ...currentPlayer,
     };
+
+    const games = await databases.listDocuments(
+        DATABASE_ID,
+        GAMES_COLLECTION_ID,
+        [Query.equal("roomId", joinRoomId)]
+    );
+    const game = games.documents[0];
+
+    await databases.updateDocument(
+        DATABASE_ID,
+        GAMES_COLLECTION_ID,
+        game.$id,
+        {
+          playerIds: [...game.playerIds, player.id]
+        }
+    );
     
     setCurrentPlayer(player);
     setRoomId(joinRoomId);
