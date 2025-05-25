@@ -13,35 +13,36 @@ export const useAuthRestore = () => {
             try {
                 const user = await account.get();
 
-                const player = await databases.getDocument(
-                    DATABASE_ID,
-                    PLAYERS_COLLECTION_ID,
-                    user.$id
-                );
+                try {
+                    const player = await databases.getDocument(
+                        DATABASE_ID,
+                        PLAYERS_COLLECTION_ID,
+                        user.$id
+                    );
 
-                setCurrentPlayer({
-                    id: user.$id,
-                    name: player.name,
-                    avatar: player.avatar,
-                    email: user.email,
-                    score: player.score,
-                    isHost: false,
-                    isEliminated: false,
-                    totalScore: player.score,
-                    gamesPlayed: 0,
-                    gamesWon: 0,
-                    coins: player.coins,
-                    level: player.level,
-                    experience: player.experience,
-                });
+                    setCurrentPlayer({
+                        id: user.$id,
+                        name: player.name,
+                        avatar: player.avatar,
+                        email: user.email,
+                        score: player.score,
+                        isHost: false,
+                        isEliminated: false,
+                        totalScore: player.score,
+                        gamesPlayed: 0,
+                        gamesWon: 0,
+                        coins: player.coins,
+                        level: player.level,
+                        experience: player.experience,
+                    });
+                } catch (docErr) {
+                    console.warn("Player document not found.");
+                }
             } catch (err) {
-                // Pas de session trouvée ou erreur silencieuse
                 console.log('No user session to restore');
             }
         };
 
-        restoreSession().then(r =>  {
-            console.log('Session restored');
-        });
+        restoreSession();
     }, [setCurrentPlayer]);
 };

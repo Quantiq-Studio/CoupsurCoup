@@ -1,7 +1,3 @@
-export const avatarSeeds = [
-  'Foxie', 'CoolKid', 'PandaFace', 'BotX', 'Alienette', 'Cactus',
-  'Smiley', 'BurgerMan', 'RainbowZ', 'FunkyMonkey', 'NekoChan', 'PirateJoe'
-];
 
 export const badgeImages = [
   "/badges/badge-1.png",
@@ -24,6 +20,3 @@ export const categoryImages = {
   food: "/categories/food.jpg",
   technology: "/categories/technology.jpg",
 };
-
-export const getAvatarUrl = (seed: string) =>
-    `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${seed}`;

@@ -139,19 +139,24 @@ const HomePage: React.FC = () => {
                   bordered
                 />
               </div>
-              
+
               <GameInput
-                label="Votre pseudo"
-                placeholder="Entrez votre pseudo"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                containerClassName="mb-4"
+                  label="Votre pseudo"
+                  placeholder="Entrez votre pseudo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  containerClassName="mb-4"
+                  disabled={!!currentPlayer?.email}
               />
-              
-              <label className="block text-sm font-medium mb-2">
-                Choisissez votre avatar
-              </label>
-              <AvatarSelector onSelect={setAvatar} selectedAvatar={avatar} />
+
+              {!currentPlayer?.email && (
+                  <>
+                    <label className="block text-sm font-medium mb-2">
+                      Choisissez votre avatar
+                    </label>
+                    <AvatarSelector onSelect={setAvatar} selectedAvatar={avatar} />
+                  </>
+              )}
             </div>
             
             {!showJoinForm ? (
@@ -194,7 +199,7 @@ const HomePage: React.FC = () => {
                 </GameButton>
                 
                 <GameButton 
-                  variant="outline"
+                  variant="accent"
                   className="w-full" 
                   onClick={toggleJoinForm}
                 >

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { LogIn, UserPlus, Home } from 'lucide-react';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
-import {account} from "@/lib/appwrite.ts";
+import {account, databases} from "@/lib/appwrite.ts";
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,26 +24,55 @@ const SignInPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await account.createEmailPasswordSession(email, password);
+      if (!email || !password) {
+        toast({
+          title: 'Erreur de connexion',
+          description: 'Veuillez remplir tous les champs',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Vérifie s'il y a déjà une session active
+        await account.get();
+        console.log('Session already active, skipping login');
+      } catch {
+        // Aucune session => on peut créer une nouvelle session
+        await account.createEmailPasswordSession(email, password);
+      }
+
       const user = await account.get();
+
+      const player = await databases.getDocument(
+          '68308ece00320290574e',
+          '68308f130020e76ceeec',
+          user.$id
+      );
 
       setCurrentPlayer({
         id: user.$id,
-        name: user.name,
-        avatar: '/placeholder.svg',
-        score: 0,
+        name: player.name,
+        avatar: player.avatar,
+        email: user.email,
+        score: player.score,
         isHost: false,
         isEliminated: false,
-        email: user.email,
-        totalScore: 0,
+        totalScore: player.score,
         gamesPlayed: 0,
         gamesWon: 0,
-        coins: 1000,
+        coins: player.coins,
+        level: player.level,
+        experience: player.experience,
       });
 
-      toast({ title: 'Connexion réussie', description: 'Bienvenue dans le Coup sur Coup !' });
-      navigate('/profile');
+      toast({
+        title: 'Connexion réussie',
+        description: 'Bienvenue dans le Coup sur Coup !',
+      });
 
+      navigate('/profile');
     } catch (error: any) {
       toast({
         title: 'Erreur de connexion',

@@ -7,6 +7,7 @@ import { Home, User, LogIn, LogOut } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import {account} from "@/lib/appwrite.ts";
 
 interface GameHeaderProps {
   showHomeButton?: boolean;
@@ -20,13 +21,24 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   const navigate = useNavigate();
   const { currentPlayer, setCurrentPlayer } = useGame();
   const { toast } = useToast();
-  
-  const handleLogout = () => {
+
+  const handleLogout = async () => {
+    try {
+      // Supprime la session en cours
+      await account.deleteSession('current');
+    } catch (err) {
+      console.warn("Erreur lors de la déconnexion :", err);
+    }
+
+    // Réinitialise le contexte local
     setCurrentPlayer(null);
+
+    // Notification + redirection
     toast({
       title: "Déconnecté",
-      description: "Vous avez été déconnecté avec succès"
+      description: "Vous avez été déconnecté avec succès",
     });
+
     navigate('/');
   };
   

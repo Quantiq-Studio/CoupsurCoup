@@ -46,14 +46,24 @@ const ProfilePage: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, [currentPlayer, navigate, toast]);
-  
+
   const handleLogout = async () => {
-    await account.deleteSession('current');
+    try {
+      // Supprime la session en cours
+      await account.deleteSession('current');
+    } catch (err) {
+      console.warn("Erreur lors de la déconnexion :", err);
+    }
+
+    // Réinitialise le contexte local
     setCurrentPlayer(null);
+
+    // Notification + redirection
     toast({
       title: "Déconnecté",
       description: "Vous avez été déconnecté avec succès",
     });
+
     navigate('/');
   };
 
