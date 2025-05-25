@@ -11,17 +11,15 @@ import { GameTitle } from "@/components/ui/game-title";
 import { databases } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 
+const DATABASE_ID = '68308ece00320290574e';
 const GAMES_COLLECTION_ID = '68308f180030b8019d46';
 const PLAYERS_COLLECTION_ID = '68308f130020e76ceeec';
-const DATABASE_ID = '68308ece00320290574e';
 const MIN_PLAYERS = 4;
 
 const generateBots = (count: number) => {
-  const allNames = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Heidi', 'Nina', 'Oscar', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina'];
-  const shuffled = allNames.sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, count);
-
-  return selected.map((name, i) => ({
+  const names = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Heidi', 'Nina', 'Oscar', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina'];
+  const shuffled = names.sort(() => 0.5 - Math.random()).slice(0, count);
+  return shuffled.map((name, i) => ({
     id: `bot-${i + 1}`,
     name,
     avatar: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=bot${i + 1}`,
@@ -42,61 +40,74 @@ const WaitingRoom: React.FC = () => {
     players,
     setPlayers,
     setCurrentRound,
-    setCurrentQuestionIndex
+    setCurrentQuestionIndex,
   } = useGame();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [generatedBots, setGeneratedBots] = useState<any[]>([]);
-  const [previousPlayerIds, setPreviousPlayerIds] = useState<string[]>([]);
+  const [bots, setBots] = useState<any[]>([]);
 
-  let bots: any[] = generatedBots;
-
+  // 💓 Heartbeat toutes les 2 secondes
   useEffect(() => {
-    fetchPlayers();
     const interval = setInterval(() => {
-      fetchPlayers();
-    }, 1000);
+      if (currentPlayer?.id) {
+        databases.updateDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, currentPlayer.id, {
+          lastSeenAt: new Date().toISOString(),
+        }).catch(() => {});
+      }
+    }, 2000);
     return () => clearInterval(interval);
-  }, [roomId, currentPlayer]);
-
-  useEffect(() => {
-    const heartbeat = setInterval(() => {
-      if (!currentPlayer?.id) return;
-      databases.updateDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, currentPlayer.id, {
-        lastSeenAt: new Date().toISOString(),
-      }).catch(() => {});
-    }, 1000); // toutes les 1 secondes
-
-    return () => clearInterval(heartbeat);
   }, [currentPlayer]);
 
-  const fetchPlayers = async () => {
-    if (!roomId || !currentPlayer) {
-      navigate('/');
-      return;
-    }
+  // 🚀 Fetch initial + polling toutes les 2 sec après que le joueur est inscrit
+  useEffect(() => {
+    if (!roomId || !currentPlayer?.id) return;
+    let polling: any;
 
+    const waitUntilPlayerIsRegistered = async () => {
+      try {
+        let registered = false;
+        while (!registered) {
+          const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
+            Query.equal("roomId", roomId),
+          ]);
+          const game = res.documents[0];
+          if (game?.playerIds.includes(currentPlayer.id)) {
+            registered = true;
+            await updatePlayers(game); // fetch initial
+            polling = setInterval(() => updatePlayers(game), 2000); // polling
+          } else {
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        toast({
+          title: "Erreur",
+          description: "Impossible de rejoindre la salle.",
+          variant: "destructive",
+        });
+        navigate('/');
+      }
+    };
+
+    waitUntilPlayerIsRegistered();
+    return () => clearInterval(polling);
+  }, [roomId, currentPlayer?.id]);
+
+  const updatePlayers = async (game: any) => {
     try {
-      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
-        Query.equal("roomId", roomId),
-      ]);
-      const game = res.documents[0];
-      if (!game) throw new Error("Game introuvable");
-
       const playerDocs = await Promise.all(
           game.playerIds.map((id: string) =>
               databases.getDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, id).catch(() => null)
           )
       );
 
+      const now = new Date();
       const realPlayers = playerDocs
           .filter(Boolean)
           .filter((doc: any) => {
-            if (!doc.lastSeenAt) return false;
             const lastSeen = new Date(doc.lastSeenAt);
-            const now = new Date();
-            const secondsAgo = (now.getTime() - lastSeen.getTime()) / 1000;
-            return secondsAgo < 2;
+            return (now.getTime() - lastSeen.getTime()) / 1000 < 4;
           })
           .map((doc: any) => ({
             id: doc.$id,
@@ -109,31 +120,21 @@ const WaitingRoom: React.FC = () => {
             isBot: false,
           }));
 
-      const currentIds = realPlayers.map(p => p.id);
-      const leftPlayers = previousPlayerIds.filter(id => !currentIds.includes(id));
-      if (leftPlayers.length > 0) {
-        toast({
-          title: 'Un joueur a quitté',
-          description: 'Un ou plusieurs joueurs se sont déconnectés de la salle.',
-        });
-      }
-
-      setPreviousPlayerIds(currentIds);
       const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
+      const newBots = generateBots(neededBots);
+      setBots(newBots);
+      const finalPlayers = [...realPlayers, ...newBots];
+      setPlayers(finalPlayers);
 
-      if (bots.length !== neededBots) {
-        bots = generateBots(neededBots);
-        setGeneratedBots(bots);
-      }
-
-      setPlayers([...realPlayers, ...bots.slice(0, neededBots)]);
-      setIsLoading(false);
+// ✅ Affiche les joueurs seulement quand currentPlayer est visible dans la liste
+      const isCurrentPlayerVisible = finalPlayers.some(p => p.id === currentPlayer?.id);
+      setIsLoading(!isCurrentPlayerVisible);
     } catch (err: any) {
       console.error(err);
       toast({
-        title: 'Erreur',
-        description: err.message || 'Impossible de charger la salle',
-        variant: 'destructive',
+        title: "Erreur",
+        description: err.message || "Impossible de charger les joueurs",
+        variant: "destructive",
       });
       navigate('/');
     }
@@ -147,33 +148,6 @@ const WaitingRoom: React.FC = () => {
       const game = res.documents[0];
       if (!game) throw new Error("Partie introuvable");
 
-      // 1. On filtre les joueurs humains (hors bots)
-      const realPlayers = players.filter(p => !p.isBot);
-
-      // 2. On s’assure que currentPlayer est inclus
-      const isIncluded = realPlayers.some(p => p.id === currentPlayer?.id);
-      if (!isIncluded && currentPlayer) {
-        realPlayers.push(currentPlayer);
-      }
-
-      // 3. Vérifie qu’on atteint MIN_PLAYERS humains (sans les bots)
-      if (realPlayers.length < MIN_PLAYERS) {
-        toast({
-          title: 'Pas assez de joueurs',
-          description: `Il faut au moins ${MIN_PLAYERS} joueurs humains pour commencer la partie.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // 4. Génère les bots restants s’il en faut
-      const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
-      const botsToAdd = generateBots(neededBots);
-
-      // 5. Mise à jour du state
-      setPlayers([...realPlayers, ...botsToAdd]);
-
-      // 6. Mise à jour du document game
       await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
         status: "playing",
         round: 1,
@@ -184,7 +158,6 @@ const WaitingRoom: React.FC = () => {
       setCurrentQuestionIndex(0);
       navigate(`/round1/${roomId}`);
     } catch (err: any) {
-      console.error(err);
       toast({
         title: "Erreur",
         description: err.message || "Impossible de démarrer la partie",
@@ -249,9 +222,18 @@ const WaitingRoom: React.FC = () => {
                             <AvatarImage src={player.avatar} alt={player.name} />
                             <AvatarFallback>{player.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <p className="font-medium text-center text-white">{player.name}</p>
-                          {player.isHost && <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>}
-                          {player.isBot && <span className="text-xs py-1 px-2 bg-white/20 text-white rounded-full mt-1">Bot</span>}
+                          {!player.isBot && (
+                              <p className="font-medium text-center text-white">{player.name}</p>
+                            )}
+
+                          {player.isHost && (
+                              <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>
+                          )}
+                          {player.isBot && (
+                              <span className="text-xs py-1 px-2 bg-white/20 text-white rounded-full mt-1">
+                        Bot
+                      </span>
+                          )}
                         </div>
                     ))}
                   </div>
@@ -261,7 +243,9 @@ const WaitingRoom: React.FC = () => {
                         <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
                         <div>
                           <h3 className="font-medium text-white">Attention</h3>
-                          <p className="text-white">Il faut au moins {MIN_PLAYERS} joueurs pour commencer. Actuellement {players.length} joueur(s).</p>
+                          <p className="text-white">
+                            Il faut au moins {MIN_PLAYERS} joueurs pour commencer. Actuellement {players.length}.
+                          </p>
                         </div>
                       </div>
                   )}
@@ -273,7 +257,7 @@ const WaitingRoom: React.FC = () => {
                     En attendant...
                   </h2>
                   <p className="text-white">
-                    Préparez-vous à affronter d'autres joueurs dans une série d'épreuves ! Le dernier debout accédera à l’épreuve finale.
+                    Préparez-vous à affronter d'autres joueurs dans une série d'épreuves !
                   </p>
                 </div>
 
@@ -286,7 +270,7 @@ const WaitingRoom: React.FC = () => {
                       >
                         <PlayIcon className="h-5 w-5 mr-2" />
                         {players.length < MIN_PLAYERS
-                            ? `En attente de joueurs (${players.length}/${MIN_PLAYERS})`
+                            ? `En attente (${players.length}/${MIN_PLAYERS})`
                             : 'Lancer la partie'}
                       </Button>
                   ) : (
