@@ -124,14 +124,14 @@ const LeaderboardPage: React.FC = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-3 mb-6 bg-white/20">
-            <TabsTrigger value="weekly" className="data-[state=active]:bg-white/30">
+          <TabsList className="grid grid-cols-3 mb-6 bg-white/20 text-white">
+            <TabsTrigger value="weekly" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               Cette semaine
             </TabsTrigger>
-            <TabsTrigger value="alltime" className="data-[state=active]:bg-white/30">
+            <TabsTrigger value="alltime" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               Tout temps
             </TabsTrigger>
-            <TabsTrigger value="categories" className="data-[state=active]:bg-white/30">
+            <TabsTrigger value="categories" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               Par catégorie
             </TabsTrigger>
           </TabsList>

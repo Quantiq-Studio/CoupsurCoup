@@ -164,16 +164,16 @@ const ChallengesPage: React.FC = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-3 mb-6 bg-white/20">
-            <TabsTrigger value="daily" className="data-[state=active]:bg-white/30">
+          <TabsList className="grid grid-cols-3 mb-6 bg-white/20 text-white">
+            <TabsTrigger value="daily" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               <Calendar className="h-4 w-4 mr-2" />
               Quotidiens
             </TabsTrigger>
-            <TabsTrigger value="weekly" className="data-[state=active]:bg-white/30">
+            <TabsTrigger value="weekly" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               <Calendar className="h-4 w-4 mr-2" />
               Hebdomadaires
             </TabsTrigger>
-            <TabsTrigger value="special" className="data-[state=active]:bg-white/30">
+            <TabsTrigger value="special" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               <Trophy className="h-4 w-4 mr-2" />
               Spéciaux
             </TabsTrigger>

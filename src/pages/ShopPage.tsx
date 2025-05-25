@@ -116,7 +116,7 @@ const ShopPage: React.FC = () => {
           
           <div className="bg-white/30 backdrop-blur-sm px-4 py-2 rounded-full flex items-center">
             <Coins className="h-5 w-5 text-yellow-400 mr-2" />
-            <span className="font-bold">{currentPlayer.coins || 0}</span>
+            <span className="font-bold text-white">{currentPlayer.coins || 0}</span>
           </div>
         </div>
 
@@ -126,12 +126,12 @@ const ShopPage: React.FC = () => {
         </div>
         
         <Tabs defaultValue="avatars" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6 bg-white/20">
-            <TabsTrigger value="avatars" className="data-[state=active]:bg-white/30">
+          <TabsList className="grid grid-cols-2 mb-6 bg-white/20 text-white">
+            <TabsTrigger value="avatars" className="data-[state=active]:bg-white/30  data-[state=active]:text-white">
               <UserCircle className="h-4 w-4 mr-2" />
               Avatars
             </TabsTrigger>
-            <TabsTrigger value="boosters" className="data-[state=active]:bg-white/30">
+            <TabsTrigger value="boosters" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               <Zap className="h-4 w-4 mr-2" />
               Boosters
             </TabsTrigger>

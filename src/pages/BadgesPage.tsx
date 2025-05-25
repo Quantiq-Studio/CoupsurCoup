@@ -136,12 +136,12 @@ const BadgesPage: React.FC = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-2 mb-6 bg-white/20">
-            <TabsTrigger value="badges" className="data-[state=active]:bg-white/30">
+          <TabsList className="grid grid-cols-2 mb-6 bg-white/20 text-white">
+            <TabsTrigger value="badges" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               <Award className="h-4 w-4 mr-2" />
               Badges
             </TabsTrigger>
-            <TabsTrigger value="achievements" className="data-[state=active]:bg-white/30">
+            <TabsTrigger value="achievements" className="data-[state=active]:bg-white/30 data-[state=active]:text-white">
               <Trophy className="h-4 w-4 mr-2" />
               Succès
             </TabsTrigger>
