@@ -47,6 +47,7 @@ const WaitingRoom: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [generatedBots, setGeneratedBots] = useState<any[]>([]);
+  const [previousPlayerIds, setPreviousPlayerIds] = useState<string[]>([]);
 
   let bots: any[] = generatedBots;
 
@@ -54,9 +55,20 @@ const WaitingRoom: React.FC = () => {
     fetchPlayers();
     const interval = setInterval(() => {
       fetchPlayers();
-    }, 5000);
+    }, 1000);
     return () => clearInterval(interval);
   }, [roomId, currentPlayer]);
+
+  useEffect(() => {
+    const heartbeat = setInterval(() => {
+      if (!currentPlayer?.id) return;
+      databases.updateDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, currentPlayer.id, {
+        lastSeenAt: new Date().toISOString(),
+      }).catch(() => {});
+    }, 1000); // toutes les 1 secondes
+
+    return () => clearInterval(heartbeat);
+  }, [currentPlayer]);
 
   const fetchPlayers = async () => {
     if (!roomId || !currentPlayer) {
@@ -77,17 +89,36 @@ const WaitingRoom: React.FC = () => {
           )
       );
 
-      const realPlayers = playerDocs.filter(Boolean).map((doc: any) => ({
-        id: doc.$id,
-        name: doc.name,
-        avatar: doc.avatar,
-        score: doc.score || 0,
-        coins: doc.coins || 0,
-        isHost: doc.$id === game.hostId,
-        isEliminated: false,
-        isBot: false,
-      }));
+      const realPlayers = playerDocs
+          .filter(Boolean)
+          .filter((doc: any) => {
+            if (!doc.lastSeenAt) return false;
+            const lastSeen = new Date(doc.lastSeenAt);
+            const now = new Date();
+            const secondsAgo = (now.getTime() - lastSeen.getTime()) / 1000;
+            return secondsAgo < 2;
+          })
+          .map((doc: any) => ({
+            id: doc.$id,
+            name: doc.name,
+            avatar: doc.avatar,
+            score: doc.score || 0,
+            coins: doc.coins || 0,
+            isHost: doc.$id === game.hostId,
+            isEliminated: false,
+            isBot: false,
+          }));
 
+      const currentIds = realPlayers.map(p => p.id);
+      const leftPlayers = previousPlayerIds.filter(id => !currentIds.includes(id));
+      if (leftPlayers.length > 0) {
+        toast({
+          title: 'Un joueur a quitté',
+          description: 'Un ou plusieurs joueurs se sont déconnectés de la salle.',
+        });
+      }
+
+      setPreviousPlayerIds(currentIds);
       const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
 
       if (bots.length !== neededBots) {
@@ -109,15 +140,6 @@ const WaitingRoom: React.FC = () => {
   };
 
   const startGame = async () => {
-    if (players.length < MIN_PLAYERS) {
-      toast({
-        title: 'Pas assez de joueurs',
-        description: `Il faut au moins ${MIN_PLAYERS} joueurs pour commencer la partie.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
     try {
       const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
         Query.equal("roomId", roomId),
@@ -125,6 +147,33 @@ const WaitingRoom: React.FC = () => {
       const game = res.documents[0];
       if (!game) throw new Error("Partie introuvable");
 
+      // 1. On filtre les joueurs humains (hors bots)
+      const realPlayers = players.filter(p => !p.isBot);
+
+      // 2. On s’assure que currentPlayer est inclus
+      const isIncluded = realPlayers.some(p => p.id === currentPlayer?.id);
+      if (!isIncluded && currentPlayer) {
+        realPlayers.push(currentPlayer);
+      }
+
+      // 3. Vérifie qu’on atteint MIN_PLAYERS humains (sans les bots)
+      if (realPlayers.length < MIN_PLAYERS) {
+        toast({
+          title: 'Pas assez de joueurs',
+          description: `Il faut au moins ${MIN_PLAYERS} joueurs humains pour commencer la partie.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // 4. Génère les bots restants s’il en faut
+      const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
+      const botsToAdd = generateBots(neededBots);
+
+      // 5. Mise à jour du state
+      setPlayers([...realPlayers, ...botsToAdd]);
+
+      // 6. Mise à jour du document game
       await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
         status: "playing",
         round: 1,

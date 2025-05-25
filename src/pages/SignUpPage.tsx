@@ -59,6 +59,7 @@ const SignUpPage: React.FC = () => {
             score: 0,
             level: 1,
             experience: 0,
+            lastSeenAt: new Date().toISOString(),
           }
       );
 
