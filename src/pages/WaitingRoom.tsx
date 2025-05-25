@@ -24,7 +24,7 @@ const generateBots = (count: number) => {
   return selected.map((name, i) => ({
     id: `bot-${i + 1}`,
     name,
-    avatar: '/placeholder.svg',
+    avatar: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=bot${i + 1}`,
     score: 0,
     isHost: false,
     isEliminated: false,
@@ -46,63 +46,69 @@ const WaitingRoom: React.FC = () => {
   } = useGame();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [playerCount, setPlayerCount] = useState(0);
+  const [generatedBots, setGeneratedBots] = useState<any[]>([]);
+
+  let bots: any[] = generatedBots;
 
   useEffect(() => {
-    const fetchPlayers = async () => {
-      if (!roomId || !currentPlayer) {
-        navigate('/');
-        return;
-      }
-
-      try {
-        // 1. Récupération du game
-        const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
-          Query.equal("roomId", roomId),
-        ]);
-        const game = res.documents[0];
-        if (!game) throw new Error("Game introuvable");
-
-        // 2. Récupération des joueurs (playerIds)
-        const playerDocs = await Promise.all(
-            game.playerIds.map((id: string) =>
-                databases.getDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, id)
-                    .catch(() => null) // évite plantage si doc manquant
-            )
-        );
-
-        const realPlayers = playerDocs.filter(Boolean).map((doc: any) => ({
-          id: doc.$id,
-          name: doc.name,
-          avatar: doc.avatar,
-          score: doc.score || 0,
-          coins: doc.coins || 0,
-          isHost: doc.$id === game.hostId,
-          isEliminated: false,
-          isBot: false,
-        }));
-
-        // 3. Ajout de bots si besoin
-        const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
-        const bots = generateBots(neededBots);
-
-        setPlayers([...realPlayers, ...bots]);
-        setIsLoading(false);
-      } catch (err: any) {
-        console.error(err);
-        toast({
-          title: 'Erreur',
-          description: err.message || 'Impossible de charger la salle',
-          variant: 'destructive',
-        });
-        navigate('/');
-      }
-    };
-
     fetchPlayers();
-  }, [roomId, currentPlayer, setPlayers, toast, navigate]);
+    const interval = setInterval(() => {
+      fetchPlayers();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [roomId, currentPlayer]);
 
-  const startGame = () => {
+  const fetchPlayers = async () => {
+    if (!roomId || !currentPlayer) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
+        Query.equal("roomId", roomId),
+      ]);
+      const game = res.documents[0];
+      if (!game) throw new Error("Game introuvable");
+
+      const playerDocs = await Promise.all(
+          game.playerIds.map((id: string) =>
+              databases.getDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, id).catch(() => null)
+          )
+      );
+
+      const realPlayers = playerDocs.filter(Boolean).map((doc: any) => ({
+        id: doc.$id,
+        name: doc.name,
+        avatar: doc.avatar,
+        score: doc.score || 0,
+        coins: doc.coins || 0,
+        isHost: doc.$id === game.hostId,
+        isEliminated: false,
+        isBot: false,
+      }));
+
+      const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
+
+      if (bots.length !== neededBots) {
+        bots = generateBots(neededBots);
+        setGeneratedBots(bots);
+      }
+
+      setPlayers([...realPlayers, ...bots.slice(0, neededBots)]);
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: 'Erreur',
+        description: err.message || 'Impossible de charger la salle',
+        variant: 'destructive',
+      });
+      navigate('/');
+    }
+  };
+
+  const startGame = async () => {
     if (players.length < MIN_PLAYERS) {
       toast({
         title: 'Pas assez de joueurs',
@@ -112,9 +118,30 @@ const WaitingRoom: React.FC = () => {
       return;
     }
 
-    setCurrentRound(1);
-    setCurrentQuestionIndex(0);
-    navigate(`/round1/${roomId}`);
+    try {
+      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
+        Query.equal("roomId", roomId),
+      ]);
+      const game = res.documents[0];
+      if (!game) throw new Error("Partie introuvable");
+
+      await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
+        status: "playing",
+        round: 1,
+        currentQuestionIndex: 0,
+      });
+
+      setCurrentRound(1);
+      setCurrentQuestionIndex(0);
+      navigate(`/round1/${roomId}`);
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Erreur",
+        description: err.message || "Impossible de démarrer la partie",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

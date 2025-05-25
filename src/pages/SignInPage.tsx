@@ -35,14 +35,12 @@ const SignInPage: React.FC = () => {
       }
 
       try {
-        // Vérifie s'il y a déjà une session active
-        await account.get();
-        console.log('Session already active, skipping login');
-      } catch {
-        // Aucune session => on peut créer une nouvelle session
-        await account.createEmailPasswordSession(email, password);
+        await account.deleteSession('current');
+      } catch (e) {
+        console.log('Aucune session à supprimer ou déjà expirée');
       }
 
+      await account.createEmailPasswordSession(email, password);
       const user = await account.get();
 
       const player = await databases.getDocument(

@@ -37,6 +37,12 @@ const SignUpPage: React.FC = () => {
         return;
       }
 
+      try {
+        await account.deleteSession('current');
+      } catch (e) {
+        console.log('Aucune session à supprimer ou déjà expirée');
+      }
+
       await account.create('unique()', email, password, username);
       await account.createEmailPasswordSession(email, password);
       const user = await account.get();
