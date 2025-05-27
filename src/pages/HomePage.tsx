@@ -165,6 +165,15 @@ const HomePage: React.FC = () => {
       return;
     }
 
+    if (game.status !== 'waiting') {
+      toast({
+        title: 'Partie inaccessible',
+        description: 'Cette partie a déjà commencé ou est terminée.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     await databases.updateDocument(
         DATABASE_ID,
         GAMES_COLLECTION_ID,

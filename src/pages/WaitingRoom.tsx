@@ -180,14 +180,8 @@ const WaitingRoom: React.FC = () => {
         console.log(DATABASE_ID, GAMES_COLLECTION_ID, game.$id);
         await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
             playerIds: updatedPlayerIds,
-            hostId: null,
             status: "finished",
-        },[
-          Permission.read(Role.user(currentPlayer.id)),
-          Permission.update(Role.user(currentPlayer.id)),
-          Permission.delete(Role.user(currentPlayer.id)),
-        ]);
-        await databases.deleteDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id);
+        });
       } else if (currentPlayer.id === game.hostId) {
         // 3. Si l'hôte part, transférer à un joueur actif
         const newHost = activeHumans[0];
