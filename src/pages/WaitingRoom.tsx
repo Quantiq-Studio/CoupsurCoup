@@ -134,7 +134,7 @@ const WaitingRoom: React.FC = () => {
       const finalPlayers = [...realPlayers, ...newBots];
       setPlayers(finalPlayers);
 
-// ✅ Affiche les joueurs seulement quand currentPlayer est visible dans la liste
+      // ✅ Affiche les joueurs seulement quand currentPlayer est visible dans la liste
       const isCurrentPlayerVisible = finalPlayers.some(p => p.id === currentPlayer?.id);
       setIsLoading(!isCurrentPlayerVisible);
     } catch (err: any) {

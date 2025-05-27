@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
-import { Coins, Home, ShoppingBag, UserCircle, Zap } from 'lucide-react';
+import {ArrowLeft, Coins, Home, ShoppingBag, UserCircle, Zap} from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 // Mock shop items
@@ -105,13 +105,13 @@ const ShopPage: React.FC = () => {
       
       <div className="game-container flex flex-col py-8 z-10">
         <div className="flex justify-between items-center mb-8">
-          <Button 
-            variant="outline" 
-            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
-            onClick={() => navigate('/')}
+          <Button
+              variant="outline"
+              className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
+              onClick={() => navigate('/profile')}
           >
-            <Home className="h-5 w-5 mr-2" />
-            Accueil
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Retour
           </Button>
           
           <div className="bg-white/30 backdrop-blur-sm px-4 py-2 rounded-full flex items-center">

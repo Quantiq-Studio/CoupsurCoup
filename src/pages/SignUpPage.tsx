@@ -60,6 +60,7 @@ const SignUpPage: React.FC = () => {
             level: 1,
             experience: 0,
             lastSeenAt: new Date().toISOString(),
+            isAnonymous: false,
           }
       );
 
@@ -75,6 +76,7 @@ const SignUpPage: React.FC = () => {
         gamesPlayed: 0,
         gamesWon: 0,
         coins: 1000,
+        isAnonymous: false,
       });
 
       toast({ title: 'Inscription réussie', description: 'Bienvenue sur Le Coup sur Coup !' });

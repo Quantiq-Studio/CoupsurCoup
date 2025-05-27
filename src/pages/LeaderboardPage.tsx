@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { BarChart, Home, Medal, Star, Trophy } from 'lucide-react';
+import {ArrowLeft, BarChart, Home, Medal, Star, Trophy} from 'lucide-react';
 
 // Mock leaderboard data
 const weeklyLeaders = [
@@ -103,13 +103,13 @@ const LeaderboardPage: React.FC = () => {
       
       <div className="game-container flex flex-col py-8 z-10">
         <div className="flex justify-between items-center mb-8">
-          <Button 
-            variant="outline" 
-            className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
-            onClick={() => navigate('/')}
+          <Button
+              variant="outline"
+              className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
+              onClick={() => navigate('/profile')}
           >
-            <Home className="h-5 w-5 mr-2" />
-            Accueil
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Retour
           </Button>
         </div>
 

@@ -29,7 +29,7 @@ const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, message = "Le c
     <Button 
       variant="ghost" 
       size="sm"
-      className="text-white hover:bg-white/20"
+      className="text-white hover:bg-white/20 hover:text-white"
       onClick={handleCopy}
     >
       {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}

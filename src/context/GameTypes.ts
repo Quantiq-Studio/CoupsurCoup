@@ -11,6 +11,7 @@ export type Player = {
   status?: PlayerStatus;
   coins: number;
   isBot?: boolean;
+  isAnonymous?: boolean;
   
   // Additional properties for authenticated users
   email?: string;

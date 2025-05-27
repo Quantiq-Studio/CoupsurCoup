@@ -56,7 +56,9 @@ const HomePage: React.FC = () => {
       score: 0,
       level: 1,
       experience: 0,
-      isBot: false
+      isBot: false,
+      isAnonymous: true,
+      lastSeenAt: new Date().toISOString(),
     });
 
     return {
@@ -69,7 +71,9 @@ const HomePage: React.FC = () => {
       coins: 0,
       level: 1,
       experience: 0,
-      isBot: false
+      isBot: false,
+      isAnonymous: true,
+      lastSeenAt: new Date().toISOString(),
     };
   };
 

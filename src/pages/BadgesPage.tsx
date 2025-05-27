@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import BackgroundShapes from '@/components/game/BackgroundShapes';
 import BadgeComponent from '@/components/game/Badge';
-import { Award, Home, Medal, Star, Trophy } from 'lucide-react';
+import { Award, Home, Medal, Star, Trophy, ArrowLeft } from 'lucide-react';
 
 // Mock badges data
 const allBadges = [
@@ -118,10 +118,10 @@ const BadgesPage: React.FC = () => {
           <Button 
             variant="outline" 
             className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/profile')}
           >
-            <Home className="h-5 w-5 mr-2" />
-            Accueil
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Retour
           </Button>
         </div>
 

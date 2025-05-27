@@ -28,7 +28,6 @@ const ProfilePage: React.FC = () => {
   ];
 
   useEffect(() => {
-    // Redirect if not logged in
     if (!currentPlayer?.email) {
       toast({
         title: "Non connecté",
@@ -36,15 +35,9 @@ const ProfilePage: React.FC = () => {
         variant: "destructive",
       });
       navigate('/signin');
-      return;
-    }
-    
-    // Simulate loading delay
-    const timer = setTimeout(() => {
+    } else {
       setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    }
   }, [currentPlayer, navigate, toast]);
 
   const handleLogout = async () => {
