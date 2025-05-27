@@ -8,8 +8,8 @@ import CopyToClipboard from '@/components/game/CopyToClipboard';
 import LoadingSpinner from '@/components/game/LoadingSpinner';
 import { HomeIcon, PlayIcon, TimerIcon, User, AlertTriangle } from 'lucide-react';
 import { GameTitle } from "@/components/ui/game-title";
-import { databases } from '@/lib/appwrite';
-import { Query } from 'appwrite';
+import {account, databases} from '@/lib/appwrite';
+import {Permission, Query, Role} from 'appwrite';
 
 const DATABASE_ID = '68308ece00320290574e';
 const GAMES_COLLECTION_ID = '68308f180030b8019d46';
@@ -94,8 +94,15 @@ const WaitingRoom: React.FC = () => {
     return () => clearInterval(polling);
   }, [roomId, currentPlayer?.id]);
 
-  const updatePlayers = async (game: any) => {
+  const updatePlayers = async () => {
     try {
+      // 🔁 Toujours récupérer le game à jour
+      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
+        Query.equal("roomId", roomId),
+      ]);
+      const game = res.documents[0];
+      if (!game) throw new Error("Partie introuvable");
+
       const playerDocs = await Promise.all(
           game.playerIds.map((id: string) =>
               databases.getDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, id).catch(() => null)
@@ -123,6 +130,7 @@ const WaitingRoom: React.FC = () => {
       const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
       const newBots = generateBots(neededBots);
       setBots(newBots);
+
       const finalPlayers = [...realPlayers, ...newBots];
       setPlayers(finalPlayers);
 
@@ -137,6 +145,70 @@ const WaitingRoom: React.FC = () => {
         variant: "destructive",
       });
       navigate('/');
+    }
+  };
+
+  const handleQuit = async () => {
+    if (!currentPlayer || !roomId) return;
+
+    try {
+      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
+        Query.equal("roomId", roomId),
+      ]);
+      const game = res.documents[0];
+      console.log(game);
+      if (!game) throw new Error("Partie introuvable");
+
+      // 1. Supprimer le joueur du tableau playerIds
+      const updatedPlayerIds = game.playerIds.filter((id: string) => id !== currentPlayer.id);
+
+
+      // 2. Si plus aucun joueur humain → supprimer la partie
+      const stillConnected = await Promise.all(
+          updatedPlayerIds.map((id: string) =>
+              databases.getDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, id).catch(() => null)
+          )
+      );
+
+      const activeHumans = stillConnected.filter(p => p && !p.isBot && p.lastSeenAt).filter(p => {
+        const secondsAgo = (Date.now() - new Date(p.lastSeenAt).getTime()) / 1000;
+        return secondsAgo < 10;
+      });
+
+      if (activeHumans.length === 0) {
+        console.log("Aucun joueur actif, suppression de la partie");
+        console.log(DATABASE_ID, GAMES_COLLECTION_ID, game.$id);
+        await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
+            playerIds: updatedPlayerIds,
+            hostId: null,
+            status: "finished",
+        },[
+          Permission.read(Role.user(currentPlayer.id)),
+          Permission.update(Role.user(currentPlayer.id)),
+          Permission.delete(Role.user(currentPlayer.id)),
+        ]);
+        await databases.deleteDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id);
+      } else if (currentPlayer.id === game.hostId) {
+        // 3. Si l'hôte part, transférer à un joueur actif
+        const newHost = activeHumans[0];
+        await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
+          playerIds: updatedPlayerIds,
+          hostId: newHost.$id,
+        });
+      } else {
+        await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
+          playerIds: updatedPlayerIds,
+        });
+      }
+
+      navigate('/');
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: 'Erreur',
+        description: err.message || "Impossible de quitter la partie.",
+        variant: 'destructive',
+      });
     }
   };
 
@@ -173,7 +245,7 @@ const WaitingRoom: React.FC = () => {
             <Button
                 variant="outline"
                 className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
-                onClick={() => navigate('/')}
+                onClick={() => handleQuit()}
             >
               <HomeIcon className="h-5 w-5 mr-2" />
               Quitter
@@ -262,7 +334,7 @@ const WaitingRoom: React.FC = () => {
                 </div>
 
                 <div className="mt-auto text-center">
-                  {currentPlayer?.isHost ? (
+                  {players.find(p => p.isHost)?.id === currentPlayer?.id ? (
                       <Button
                           className="bg-gradient-to-r from-game-yellow to-game-red hover:opacity-90 text-lg py-4 px-10 shadow-lg"
                           onClick={startGame}
