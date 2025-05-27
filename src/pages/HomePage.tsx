@@ -47,7 +47,8 @@ const HomePage: React.FC = () => {
   };
 
   const createAnonymousPlayer = async (name: string, avatar: string) => {
-    const playerId = ID.unique();
+    const player = await account.get()
+    const playerId = player.$id;
     await databases.createDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, playerId, {
       name,
       avatar,
