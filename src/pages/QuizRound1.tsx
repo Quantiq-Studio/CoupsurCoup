@@ -150,8 +150,8 @@ const QuizRound1: React.FC = () => {
     const willSucceed = Math.random() < successRate;
 
     const answerIndex = willSucceed
-        ? currentQuestion.correctAnswer
-        : getRandomIncorrectOption(currentQuestion.correctAnswer, currentQuestion.options.length);
+        ? currentQuestion.correctIndex
+        : getRandomIncorrectOption(currentQuestion.correctIndex, currentQuestion.options.length);
 
     // Petite pause pour simuler une réflexion
     setTimeout(() => {
@@ -250,7 +250,7 @@ const QuizRound1: React.FC = () => {
     setSelectedOption(optionIndex);
     setShowResult(true);
     
-    if (optionIndex === currentQuestion?.correctAnswer) {
+    if (optionIndex === currentQuestion?.correctIndex) {
       // Award coins
       const coinGain = 100;
       updatePlayerCoins(activePlayerId, coinGain, 'Bonne réponse');
@@ -402,31 +402,56 @@ const QuizRound1: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-8 animate-zoom-in">
               {currentQuestion && !showDuelNotification && (
                 <QuestionDisplay 
-                  question={currentQuestion.text}
+                  question={currentQuestion.question}
                   category={currentQuestion.category || ''}
-                  difficulty={currentQuestion.difficulty || 'medium'}
+                  difficulty={currentQuestion.difficulty || 'moyen'}
                 />
               )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-                {currentQuestion?.options.map((option, index) => (
-                  <OptionButton 
-                    key={index}
-                    label={option}
-                    selected={selectedOption === index}
-                    correct={showResult && index === currentQuestion.correctAnswer}
-                    incorrect={showResult && selectedOption === index && index !== currentQuestion.correctAnswer}
-                    disabled={showResult || showDuelNotification ||
-                        activePlayer?.id !== currentPlayer?.id ||
-                        currentPlayer?.isBot}
-                    onClick={() => handleOptionSelect(index)}
-                  />
-                ))}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                {(() => {
+                  if (!currentQuestion) return null;
+
+                  // 1) Copie défensive
+                  const opts = [...(currentQuestion.options ?? [])];
+
+                  // 2) Si une réponse est cachée → on l’ajoute en dernière position
+                  if (currentQuestion.hiddenAnswer && !opts.includes(currentQuestion.hiddenAnswer)) {
+                    opts.push(currentQuestion.hiddenAnswer);
+                  }
+
+                  // 3) Rendu
+                  return opts.map((option, index) => {
+                    const isHidden = option === currentQuestion.hiddenAnswer;
+
+                    return (
+                        <OptionButton
+                            key={index}
+                            label={option}
+                            isHidden={isHidden}
+                            selected={selectedOption === index}
+                            correct={showResult && index === currentQuestion.correctIndex}
+                            incorrect={
+                                showResult &&
+                                selectedOption === index &&
+                                index !== currentQuestion.correctIndex
+                            }
+                            disabled={
+                                showResult ||
+                                showDuelNotification ||
+                                activePlayer?.id !== currentPlayer?.id ||
+                                currentPlayer?.isBot
+                            }
+                            onClick={() => handleOptionSelect(index)}
+                        />
+                    );
+                  });
+                })()}
               </div>
               
               {showResult && !showDuelNotification && (
                 <div className="mt-6 text-center animate-bounce-in">
-                  {selectedOption === currentQuestion?.correctAnswer ? (
+                  {selectedOption === currentQuestion?.correctIndex ? (
                     <div>
                       <p className="text-xl font-bold text-green-400">Bonne réponse !</p>
                     </div>
@@ -439,7 +464,7 @@ const QuizRound1: React.FC = () => {
                   )}
                   { selectedOption !== null ? (
                       <p className="mt-2 text-white">
-                        La bonne réponse était : {currentQuestion?.options[currentQuestion.correctAnswer]}
+                        La bonne réponse était : {currentQuestion?.options[currentQuestion.correctIndex]}
                       </p> ) : (
                         <p className="mt-2 text-white">
                             Vous n'avez pas répondu à temps.

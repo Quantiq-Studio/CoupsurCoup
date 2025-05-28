@@ -41,6 +41,7 @@ const WaitingRoom: React.FC = () => {
     setPlayers,
     setCurrentRound,
     setCurrentQuestionIndex,
+    loadQuestions
   } = useGame();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -73,8 +74,8 @@ const WaitingRoom: React.FC = () => {
           const game = res.documents[0];
           if (game?.playerIds.includes(currentPlayer.id)) {
             registered = true;
-            await updatePlayers(game); // fetch initial
-            polling = setInterval(() => updatePlayers(game), 2000); // polling
+            await updatePlayers(); // fetch initial
+            polling = setInterval(() => updatePlayers(), 2000); // polling
           } else {
             await new Promise((r) => setTimeout(r, 300));
           }
@@ -206,18 +207,25 @@ const WaitingRoom: React.FC = () => {
     }
   };
 
+
   const startGame = async () => {
     try {
+      // On récupère le doc game
       const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
         Query.equal("roomId", roomId),
       ]);
       const game = res.documents[0];
       if (!game) throw new Error("Partie introuvable");
 
+      // ⚡️ Tirage
+      const questionIds = await loadQuestions();
+      console.log("👀 Questions tirées :", questionIds);
+
       await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
         status: "playing",
         round: 1,
         currentQuestionIndex: 0,
+        questions: questionIds,
       });
 
       setCurrentRound(1);

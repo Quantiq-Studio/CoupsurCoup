@@ -11,6 +11,7 @@ interface OptionButtonProps {
   disabled?: boolean;
   onClick: () => void;
   compact?: boolean;
+  isHidden?: boolean;
 }
 
 const OptionButton: React.FC<OptionButtonProps> = ({ 
@@ -20,7 +21,8 @@ const OptionButton: React.FC<OptionButtonProps> = ({
   incorrect = false, 
   disabled = false,
   onClick,
-  compact = false
+  compact = false,
+    isHidden = false
 }) => {
   const getButtonClasses = () => {
     if (correct) {
@@ -45,7 +47,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
     >
-      {label}
+      {isHidden ? "?" : label}
     </Button>
   );
 };
