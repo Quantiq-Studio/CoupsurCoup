@@ -84,3 +84,13 @@ git clone https://github.com/Quantiq-Studio/CoupsurCoup.git
 cd CoupsurCoup
 npm install
 npm run dev
+```
+
+## 🧑‍💻 Auteurs
+- Célian Frasca 
+- Quentin Juvet
+
+**Projet développé par [Quantiq Studio](https://quantiqstudio.com)**
+
+## 📜 Licence
+Ce projet est sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plus de détails.
