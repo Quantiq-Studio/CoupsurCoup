@@ -12,17 +12,19 @@ interface OptionButtonProps {
   onClick: () => void;
   compact?: boolean;
   isHidden?: boolean;
+  revealed?: boolean;
 }
 
-const OptionButton: React.FC<OptionButtonProps> = ({ 
-  label, 
-  selected, 
-  correct = false, 
-  incorrect = false, 
+const OptionButton: React.FC<OptionButtonProps> = ({
+  label,
+  selected,
+  correct = false,
+  incorrect = false,
   disabled = false,
   onClick,
   compact = false,
-    isHidden = false
+  isHidden = false,
+  revealed = false
 }) => {
   const getButtonClasses = () => {
     if (correct) {
@@ -36,7 +38,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({
     }
     return 'bg-white/20 hover:bg-white/30 text-white shadow';
   };
-  
+
   return (
     <Button
       className={cn(
@@ -47,7 +49,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
     >
-      {isHidden ? "?" : label}
+      {isHidden && !revealed ? "?" : label}
     </Button>
   );
 };

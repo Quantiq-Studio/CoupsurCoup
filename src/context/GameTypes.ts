@@ -89,6 +89,22 @@ export type Question = {
   falseIndex?: number;
 };
 
+/* status possibles dans ta collection */
+export type GameStatus = 'waiting' | 'playing' | 'finished';
+
+export type Game = {
+  id: string;
+  roomId: string;
+  hostId: string;
+  playerIds: string[];
+
+  status: GameStatus;
+  round: number;
+  createdAt: string;
+  currentQuestionIndex: number;
+  questions: string[];
+};
+
 export type DuelTheme = {
   id: string;
   name: string;

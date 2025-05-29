@@ -219,7 +219,6 @@ const WaitingRoom: React.FC = () => {
 
       // ⚡️ Tirage
       const questionIds = await loadQuestions();
-      console.log("👀 Questions tirées :", questionIds);
 
       await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
         status: "playing",

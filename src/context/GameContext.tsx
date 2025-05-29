@@ -8,7 +8,7 @@ import {
     Question,
     FinalGridItem,
     GameMode,
-    CoinTransaction,
+    CoinTransaction, Game,
 } from "./GameTypes";
 import {databases} from "@/lib/appwrite";
 import {Query} from "appwrite";
@@ -48,6 +48,19 @@ const toQuestion = (doc: any): Question => {
     };
 };
 
+const toGame = (doc: any): Game => ({
+    id: doc.$id,
+    roomId: doc.roomId,
+    hostId: doc.hostId,
+    playerIds: doc.playerIds ?? [],
+
+    status: doc.status,
+    round: doc.round,
+    createdAt: doc.createdAt,
+    currentQuestionIndex: doc.currentQuestionIndex ?? 0,
+    questions: doc.questions ?? [],
+});
+
 const mockGridItems: FinalGridItem[] = [
     {id: 1, clue: "Région froide", image: "/placeholder.svg", isRevealed: false},
     {id: 2, clue: "Noir et blanc", image: "/placeholder.svg", isRevealed: false},
@@ -72,6 +85,9 @@ type GameContextType = {
 
     currentPlayer: Player | null;
     setCurrentPlayer: React.Dispatch<React.SetStateAction<Player | null>>;
+
+    game: Game | null;
+    setGame: React.Dispatch<React.SetStateAction<Game | null>>;
 
     roomId: string | null;
     setRoomId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -123,6 +139,7 @@ type GameContextType = {
 
     /* ↓↓↓  NOUVEAU  ↓↓↓ */
     loadQuestions: (ids?: string[]) => Promise<string[]>;
+    getRoundBounds: (round: number) => [number, number];
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -142,6 +159,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
     const [gridItems, setGridItems] = useState<FinalGridItem[]>(mockGridItems);
     const [finalAnswer, setFinalAnswer] = useState("");
+
+    const [game, setGame]   = useState<Game | null>(null);
     const [winner, setWinner] = useState<Player | null>(null);
 
     const [isAnswering, setIsAnswering] = useState(false);
@@ -153,51 +172,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
     /* ── Pioche & chargement des questions ───────────────────── */
 
-    // 1) génère un tableau de 60 IDs selon le quota
+    // génère un tableau de 60 IDs déjà ordonné par round
     const drawRandomQuestionIds = async (): Promise<string[]> => {
-        const quotas = [
-            {type: "phase_selective", count: 25},
-            {type: "duel", count: 2},
-            {type: "liste_piegee", count: 3},
-            {type: "chrono_pression", count: 25},
-            {type: "grille_indices", count: 5},
+        const quotasOrdered = [
+            { type: "phase_selective", count: 25 }, // Round 1
+            { type: "duel",            count: 1  }, // Round 2
+            { type: "liste_piegee",    count: 3  }, // Round 3
+            { type: "duel",            count: 1  }, // Round 4
+            { type: "chrono_pression", count: 25 }, // Round 5
+            { type: "grille_indices",  count: 5  }, // Round 6
         ];
 
-        const picked: string[] = [];
+        const ids: string[] = [];
 
-        for (const {type, count} of quotas) {
-            const res = await databases.listDocuments(DATABASE_ID, QUESTIONS_COLLECTION_ID, [
-                Query.equal("type", type),
-                Query.select(["$id"]),
-                Query.limit(1000),
-            ]);
-            if (res.total < count) throw new Error(`Pas assez de questions pour "${type}"`);
+        for (const { type, count } of quotasOrdered) {
+            const res = await databases.listDocuments(
+                DATABASE_ID,
+                QUESTIONS_COLLECTION_ID,
+                [
+                    Query.equal("type", type),
+                    Query.select(["$id"]),
+                    Query.limit(1000),
+                ]
+            );
+            if (res.total < count) {
+                throw new Error(`Pas assez de questions pour le type « ${type} » (disponibles : ${res.total})`);
+            }
 
-            picked.push(
+            ids.push(
                 ...res.documents
-                    .sort(() => 0.5 - Math.random())
+                    .sort(() => 0.5 - Math.random()) // tirage aléatoire à l'intérieur du type
                     .slice(0, count)
                     .map((d: any) => d.$id)
             );
         }
 
-        if (picked.length < 60) {
-            const missing = 60 - picked.length;
-            const res = await databases.listDocuments(DATABASE_ID, QUESTIONS_COLLECTION_ID, [
-                Query.select(["$id"]),
-                Query.limit(2000),
-            ]);
-            picked.push(
-                ...res.documents
-                    .filter((d: any) => !picked.includes(d.$id))
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, missing)
-                    .map((d: any) => d.$id)
-            );
-        }
-
-        return picked.sort(() => 0.5 - Math.random());
+        // ‼️ Pas de shuffle global – l'ordre détermine les rounds
+        return ids;
     };
+
+    // bornes [start, end] (index, inclusifs) pour chaque round
+    const ROUND_BOUNDS: [number, number][] = [
+        [0, 24],  // R1 – phase_selective
+        [25, 25], // R2 – duel
+        [26, 28], // R3 – liste_piegee
+        [29, 29], // R4 – duel
+        [30, 54], // R5 – chrono_pression
+        [55, 59], // R6 – grille_indices
+    ];
+    const getRoundBounds = (round: number): [number, number] => ROUND_BOUNDS[round - 1] ?? [0, 0];
 
     /**
      * Charge les questions :
@@ -435,6 +458,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
     /* ── Contexte exporté ───────────────────── */
     const value: GameContextType = {
+        game,
+        setGame,
         players,
         setPlayers,
         currentPlayer,
@@ -477,6 +502,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
         /* nouveau */
         loadQuestions,
+        getRoundBounds,
     };
 
     return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
