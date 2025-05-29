@@ -27,7 +27,7 @@ const QuizRound1: React.FC = () => {
     currentPlayer,
     addCoins
   } = useGame();
-  
+
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [roundComplete, setRoundComplete] = useState(false);
@@ -37,9 +37,11 @@ const QuizRound1: React.FC = () => {
   const [coinChanges, setCoinChanges] = useState<Record<string, number>>({});
   const [showDuelNotification, setShowDuelNotification] = useState(false);
   const [duelPlayerId, setDuelPlayerId] = useState<string | null>(null);
+  // État pour l’adversaire choisi
+  const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
   const [showStatusChangeNotification, setShowStatusChangeNotification] = useState<{playerId: string, status: 'orange' | 'red'} | null>(null);
   const [roundTransitionCountdown, setRoundTransitionCountdown] = useState<number | null>(null);
-  
+
   const currentQuestion = questions[currentQuestionIndex];
 
   /* ---------- construction de la liste d’options affichée ---------- */
@@ -59,12 +61,12 @@ const QuizRound1: React.FC = () => {
   const effectiveCorrectIndex = useMemo(() => {
     if (!currentQuestion) return -1;
 
-    // 1️⃣  Cas "autre" : la bonne réponse est la cachée
+    // 1️⃣  Cas "autre": la bonne réponse est la cachée
     if (currentQuestion.correct === 'autre') {
       return opts.findIndex(o => o === currentQuestion.hiddenAnswer);
     }
 
-    // 2️⃣  Cas "visibleX" : on déduit l’index (visible1 → 0, visible2 → 1…)
+    // 2️⃣  Cas "visibleX": on déduit l’index (visible1 → 0, visible2 → 1…)
     if (currentQuestion.correct?.startsWith('visible')) {
       const n = parseInt(currentQuestion.correct.replace('visible', ''), 10);
       if (!Number.isNaN(n)) return n - 1; // visible1 => 0
@@ -232,7 +234,7 @@ const QuizRound1: React.FC = () => {
 
         // Trigger duel notification
         setDuelPlayerId(playerId);
-        setShowDuelNotification(false);
+        setShowDuelNotification(true);   // afficher le bloc de sélection d’adversaire
       }
 
       return { ...prev, [playerId]: newStatus };
@@ -283,14 +285,14 @@ const QuizRound1: React.FC = () => {
   };
 
   // Handle moving to duel mode
-  const handleStartDuel = () => {
+  const handleStartDuel = (opponentId: string) => {
     setShowDuelNotification(false);
-    navigate(`/duel/${roomId}/${duelPlayerId}`);
+    navigate(`/duel/${roomId}/${duelPlayerId}/${opponentId}`);
   };
 
   // Handle option selection
   const handleOptionSelect = (optionIndex: number) => {
-    console.log('[DEBUG] handleOptionSelect -> optionIndex:', optionIndex, 'effectiveCorrectIndex:', effectiveCorrectIndex, 'label:', opts[optionIndex]);
+    console.debug('[DEBUG] handleOptionSelect -> optionIndex:', optionIndex, 'effectiveCorrectIndex:', effectiveCorrectIndex, 'label:', opts[optionIndex]);
     if (showResult || selectedOption !== null || !activePlayerId) return;
 
     setSelectedOption(optionIndex);
@@ -403,19 +405,35 @@ const QuizRound1: React.FC = () => {
         {showDuelNotification && duelPlayerId && (
           <div className="mb-6 animate-bounce-in">
             <GameNotification
-              title="Duel Décisif!"
+              title="Duel décisif !"
               message={`${getPlayerById(duelPlayerId)?.name} doit affronter un adversaire en duel!`}
               variant="error"
               icon={AlertCircle}
               className="mb-4"
             />
 
+            {/* liste des adversaires disponibles */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+              {activePlayers
+                .filter(p => p.id !== duelPlayerId)        /* on ne peut pas se choisir soi‑même */
+                .map(p => (
+                  <GameButton
+                    key={p.id}
+                    variant={selectedOpponentId === p.id ? "accent" : "secondary"}
+                    onClick={() => setSelectedOpponentId(p.id)}
+                  >
+                    {p.name}
+                  </GameButton>
+              ))}
+            </div>
+
             <div className="flex justify-center">
               <GameButton
                 variant="accent"
-                onClick={handleStartDuel}
+                disabled={!selectedOpponentId}
+                onClick={() => handleStartDuel(selectedOpponentId!)}
               >
-                Commencer le duel
+                Lancer le duel
               </GameButton>
             </div>
           </div>

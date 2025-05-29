@@ -196,7 +196,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
                 ]
             );
             if (res.total < count) {
-                throw new Error(`Pas assez de questions pour le type « ${type} » (disponibles : ${res.total})`);
+                throw new Error(`Pas assez de questions pour le type « ${type} » (disponibles: ${res.total})`);
             }
 
             ids.push(
