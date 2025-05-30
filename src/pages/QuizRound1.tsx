@@ -125,11 +125,17 @@ const QuizRound1: React.FC = () => {
       : undefined;
 
   useBotTurn({
-    isBotTurn: !!activePlayer?.isBot && !showResult,
+    isBotTurn:
+        !!activePlayer?.isBot &&
+        !showResult &&
+        effectiveCorrectIndex >= 0 &&
+        opts.length > 0,
     answer: handleOptionSelect,
     correctIndex: effectiveCorrectIndex,
     nbOptions: opts.length,
-    successRate: 0.7,
+    successRate: 0.2,
+    minDelayMs: 1000,
+    maxDelayMs: 6000,
   });
 
   /* -------------------- Helpers joueurs ------------------------- */
