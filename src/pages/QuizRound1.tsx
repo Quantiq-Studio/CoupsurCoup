@@ -104,53 +104,6 @@ const QuizRound1: React.FC = () => {
     }
   }, [activePlayers, playerStatuses]);
 
-  // Check for round transitions based on number of active players
-  useEffect(() => {
-    // If we already have a countdown running, don't start another one
-    if (roundTransitionCountdown !== null || showDuelNotification) return;
-
-    const nonEliminatedPlayers = players.filter(p => !p.isEliminated).length;
-
-    if (nonEliminatedPlayers <= 3 && nonEliminatedPlayers > 2) {
-      // Transition to round 2
-      setRoundTransitionCountdown(3);
-      toast({
-        title: "Phase suivante",
-        description: "Il ne reste que 3 joueurs ! Passage à la phase 2...",
-        variant: "default",
-      });
-    } else if (nonEliminatedPlayers <= 2) {
-      // Transition to round 3
-      setRoundTransitionCountdown(3);
-      toast({
-        title: "Phase finale",
-        description: "Il ne reste que 2 joueurs ! Passage à la phase 3...",
-        variant: "default",
-      });
-    }
-  }, [players, roundTransitionCountdown, showDuelNotification, toast]);
-
-  // Handle round transition countdown
-  useEffect(() => {
-    if (roundTransitionCountdown === null) return;
-
-    const nonEliminatedPlayers = players.filter(p => !p.isEliminated).length;
-
-    if (roundTransitionCountdown > 0) {
-      const timer = setTimeout(() => {
-        setRoundTransitionCountdown(roundTransitionCountdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      // Navigate to the appropriate round
-      if (nonEliminatedPlayers <= 3 && nonEliminatedPlayers > 2) {
-        navigate(`/round2/${roomId}`);
-      } else if (nonEliminatedPlayers <= 2) {
-        navigate(`/round3/${roomId}`);
-      }
-    }
-  }, [roundTransitionCountdown, players, navigate, roomId]);
-
   // Timer logic
   useEffect(() => {
     if (showResult || roundComplete || !activePlayerId || roundTransitionCountdown !== null) return;
@@ -189,11 +142,10 @@ const QuizRound1: React.FC = () => {
     }
   }, [activePlayerId, showResult, roundComplete, roundTransitionCountdown]);
 
-
   const simulateBotTurn = () => {
     if (!activePlayer || !activePlayer.isBot || !currentQuestion) return;
 
-    const successRate = 0.7; // 70 % de chance de bonne réponse
+    const successRate = 0.2; // 70 % de chance de bonne réponse
     const willSucceed = Math.random() < successRate;
 
     const answerIndex = willSucceed
@@ -232,9 +184,8 @@ const QuizRound1: React.FC = () => {
         // Show notification for status change to red
         setShowStatusChangeNotification({playerId, status: 'red'});
 
-        // Trigger duel notification
-        setDuelPlayerId(playerId);
-        setShowDuelNotification(true);   // afficher le bloc de sélection d’adversaire
+        // on navigue immédiatement vers la page de sélection
+        navigate(`/duel-select/${roomId}/${playerId}`);
       }
 
       return { ...prev, [playerId]: newStatus };
@@ -282,12 +233,6 @@ const QuizRound1: React.FC = () => {
       const nextIndex = (currentIndex + 1) % activePlayers.length;
       setActivePlayerId(activePlayers[nextIndex].id);
     }
-  };
-
-  // Handle moving to duel mode
-  const handleStartDuel = (opponentId: string) => {
-    setShowDuelNotification(false);
-    navigate(`/duel/${roomId}/${duelPlayerId}/${opponentId}`);
   };
 
   // Handle option selection
@@ -351,33 +296,6 @@ const QuizRound1: React.FC = () => {
     );
   };
 
-  // Render round transition notification
-  const renderRoundTransitionNotification = () => {
-    if (roundTransitionCountdown === null) return null;
-
-    const nonEliminatedPlayers = players.filter(p => !p.isEliminated).length;
-    let title, message;
-
-    if (nonEliminatedPlayers <= 3 && nonEliminatedPlayers > 2) {
-      title = "Passage à la phase 2";
-      message = `Il ne reste que ${nonEliminatedPlayers} joueurs ! Passage à la phase 2 dans ${roundTransitionCountdown}...`;
-    } else {
-      title = "Passage à la phase 3";
-      message = `Il ne reste que ${nonEliminatedPlayers} joueurs ! Passage à la phase 3 dans ${roundTransitionCountdown}...`;
-    }
-
-    return (
-      <div className="mb-4 animate-bounce-in">
-        <GameNotification
-          title={title}
-          message={message}
-          variant="default"
-          icon={TimerIcon}
-        />
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-game-gradient flex flex-col">
       <div className="game-container flex flex-col flex-grow py-8">
@@ -399,45 +317,6 @@ const QuizRound1: React.FC = () => {
             </div>
           )}
         </div>
-
-        {renderRoundTransitionNotification()}
-
-        {showDuelNotification && duelPlayerId && (
-          <div className="mb-6 animate-bounce-in">
-            <GameNotification
-              title="Duel décisif !"
-              message={`${getPlayerById(duelPlayerId)?.name} doit affronter un adversaire en duel!`}
-              variant="error"
-              icon={AlertCircle}
-              className="mb-4"
-            />
-
-            {/* liste des adversaires disponibles */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-              {activePlayers
-                .filter(p => p.id !== duelPlayerId)        /* on ne peut pas se choisir soi‑même */
-                .map(p => (
-                  <GameButton
-                    key={p.id}
-                    variant={selectedOpponentId === p.id ? "accent" : "secondary"}
-                    onClick={() => setSelectedOpponentId(p.id)}
-                  >
-                    {p.name}
-                  </GameButton>
-              ))}
-            </div>
-
-            <div className="flex justify-center">
-              <GameButton
-                variant="accent"
-                disabled={!selectedOpponentId}
-                onClick={() => handleStartDuel(selectedOpponentId!)}
-              >
-                Lancer le duel
-              </GameButton>
-            </div>
-          </div>
-        )}
 
         {renderStatusChangeNotification()}
 
