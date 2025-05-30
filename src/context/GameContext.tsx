@@ -18,6 +18,7 @@ import {Query} from "appwrite";
 ────────────────────────────────────────────── */
 const DATABASE_ID = "68308ece00320290574e";
 const QUESTIONS_COLLECTION_ID = "68308f0a000e5d7eb2ee";
+const GAMES_COLLECTION_ID = "68308f180030b8019d46";
 
 /* ────────────────────────────────────────────
    Helpers
@@ -124,6 +125,8 @@ type GameContextType = {
 
     coinTransactions: CoinTransaction[];
     setCoinTransactions: React.Dispatch<React.SetStateAction<CoinTransaction[]>>;
+
+    startDuel: (challengerId: string) => Promise<void>;
 
     /* Fonctions de jeu */
     addPlayer: (player: Player) => void;
@@ -386,6 +389,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         );
     };
 
+    /** Lance un duel :
+     *  - passe round = 2 + mode = 'duel'
+     *  - positionne le pointeur sur la 1ʳᵉ question « duel » (index 25)
+     *  - persiste dans la collection Game
+     */
+    const startDuel = async (challengerId: string) => {
+        const [duelIdx] = getRoundBounds(2);              // → 25
+        setCurrentRound(2);
+        setGameMode('duel');
+        setCurrentQuestionIndex(duelIdx);
+
+        // si une instance “Game” existe on la pousse côté Appwrite
+        if (game) {
+            await databases.updateDocument(
+                DATABASE_ID,
+                GAMES_COLLECTION_ID,
+                game.id,
+                { round: 2, currentQuestionIndex: duelIdx }
+            ).catch(() => {});
+        }
+    };
+
     // Add a new player
     const addPlayer = (player: Player) => {
         // Initialize gamification properties if not present
@@ -503,6 +528,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         /* nouveau */
         loadQuestions,
         getRoundBounds,
+        startDuel,
     };
 
     return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

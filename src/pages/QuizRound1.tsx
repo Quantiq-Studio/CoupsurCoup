@@ -28,6 +28,7 @@ const QuizRound1: React.FC = () => {
     setTimeRemaining,
     currentPlayer,
     addCoins,
+    startDuel,
   } = useGame();
 
   /* ----------------------- State locaux ----------------------- */
@@ -145,17 +146,20 @@ const QuizRound1: React.FC = () => {
     setTimeout(() => setCoinChanges(prev => ({ ...prev, [id]: 0 })), 2000);
   };
 
-  const updatePlayerStatus = (id: string) => {
-    setPlayerStatuses(prev => {
-      const current = prev[id] ?? 'green';
-      const next    = current === 'green' ? 'orange' : 'red';
+  const updatePlayerStatus = async (id: string) => {
+    // 1. on lit l’état courant (c’est déjà à jour dans playerStatuses)
+    const current = playerStatuses[id] ?? 'green';
+    const next    = current === 'green' ? 'orange' : 'red';
 
-      if (next !== current) {
-        setShowStatusNotif({ playerId: id, status: next });
-        if (next === 'red') navigate(`/duel-select/${roomId}/${id}`);
-      }
-      return { ...prev, [id]: next };
-    });
+    // 2. on met à jour le state SYNCHRO
+    setPlayerStatuses(prev => ({ ...prev, [id]: next }));
+    setShowStatusNotif({ playerId: id, status: next });
+
+    // 3. effets de bord asynchrones
+    if (next === 'red') {
+      await startDuel(id);
+      navigate(`/duel-select/${roomId}/${id}`);
+    }
   };
 
   const moveToNextPlayer = () => {
