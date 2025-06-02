@@ -17,6 +17,7 @@ import ChallengesPage from "@/pages/ChallengesPage.tsx";
 import ShopPage from "@/pages/ShopPage.tsx";
 import LeaderboardPage from "@/pages/LeaderboardPage.tsx";
 import NotFound from "@/pages/NotFound.tsx";
+import DuelSelectPage from "@/pages/DuelSelectPage.tsx";
 
 
 const AppRoutes = () => {
@@ -27,9 +28,10 @@ const AppRoutes = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/waiting-room/:roomId" element={<WaitingRoom />} />
             <Route path="/round1/:roomId" element={<QuizRound1 />} />
+            <Route path="/duel-select/:roomId/:challengerId" element={<DuelSelectPage />} />
             <Route path="/round2/:roomId" element={<QuizRound2 />} />
             <Route path="/round3/:roomId" element={<QuizRound3 />} />
-            <Route path="/duel/:roomId/:playerId" element={<DuelPage />} />
+            <Route path="/duel/:roomId/:challengerId/:opponentId" element={<DuelPage />} />
             <Route path="/final-grid/:roomId" element={<FinalGrid />} />
             <Route path="/results/:roomId" element={<ResultsPage />} />
             <Route path="/profile" element={

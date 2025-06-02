@@ -5,23 +5,23 @@ import { Badge } from '@/components/ui/badge';
 interface QuestionDisplayProps {
   question: string;
   category?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
+  difficulty?: 'facile' | 'moyen' | 'difficile';
   compact?: boolean;
 }
 
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({ 
   question, 
   category, 
-  difficulty = 'medium',
+  difficulty = 'moyen',
   compact = false 
 }) => {
   const getDifficultyColor = () => {
     switch (difficulty) {
-      case 'easy':
+      case 'facile':
         return 'bg-green-500/20 text-green-500 hover:bg-green-500/30';
-      case 'medium':
+      case 'moyen':
         return 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30';
-      case 'hard':
+      case 'difficile':
         return 'bg-red-500/20 text-red-500 hover:bg-red-500/30';
       default:
         return 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30';

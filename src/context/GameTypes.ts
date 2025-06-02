@@ -67,19 +67,42 @@ export type Challenge = {
 
 // New game mode types
 export type GameMode = 
-  | 'phase_selective' 
-  | 'duel_decisif' 
+  | 'phase_selective'
+  | 'duel'
   | 'liste_piegee' 
   | 'chrono_pression' 
   | 'grille_indices';
 
 export type Question = {
   id: string;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-  category?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
+  type: GameMode
+  category: 'histoire' | 'géographie' | 'sciences' | 'littérature' | 'art' | 'religion_mythologie' | 'cinéma' | 'séries' | 'musique' | 'jeux_video' | 'people' | 'cuisine' | 'sport' | 'santé' | 'langue_française' | 'technologie_internet' | 'vie_pratique' | 'questions_absurdes' | 'faux_amis_pieges' | 'vrai_ou_faux' | 'qui_suis_je' | 'emoji_quiz' | 'suites_logiques';
+  tags?: string[];
+  difficulty: 'facile' | 'moyen' | 'difficile';
+  question: string;
+  options?: string[];
+  hiddenAnswer?: string;
+  correct?: 'visible1' | 'visible2' | 'autre';
+  theme?: string;
+  correctIndex?: number;
+  propositions?: string[];
+  falseIndex?: number;
+};
+
+/* status possibles dans ta collection */
+export type GameStatus = 'waiting' | 'playing' | 'finished';
+
+export type Game = {
+  id: string;
+  roomId: string;
+  hostId: string;
+  playerIds: string[];
+
+  status: GameStatus;
+  round: number;
+  createdAt: string;
+  currentQuestionIndex: number;
+  questions: string[];
 };
 
 export type DuelTheme = {
