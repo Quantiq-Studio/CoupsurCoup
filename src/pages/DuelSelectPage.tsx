@@ -72,6 +72,7 @@ const DuelSelectPage: React.FC = () => {
                 <div className="max-w-sm mx-auto mb-6 animate-fade-in-slow">
                     <PlayerStatus
                         player={challenger}
+                        status={challenger.status}
                         isActive
                         showCoins
                     />
@@ -90,14 +91,15 @@ const DuelSelectPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
                     {opponents.map(p => (
-                        <GameButton
+                        <PlayerStatus
                             key={p.id}
-                            variant={opponentId === p.id ? 'accent' : 'secondary'}
+                            player={p}
+                            status={p.status}
+                            isActive={opponentId === p.id}
                             onClick={() => setOpponentId(p.id)}
-                            disabled={!!challenger?.isBot}              /* un bot n’a pas besoin de clic */
-                        >
-                            {p.name}
-                        </GameButton>
+                            showCoins
+                            compact
+                        />
                     ))}
                 </div>
 

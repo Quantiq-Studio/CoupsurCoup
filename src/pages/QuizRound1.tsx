@@ -29,6 +29,7 @@ const QuizRound1: React.FC = () => {
     currentPlayer,
     addCoins,
     startDuel,
+      updatePlayerStatus
   } = useGame();
 
   /* ----------------------- State locaux ----------------------- */
@@ -99,7 +100,7 @@ const QuizRound1: React.FC = () => {
     setShowResult(true);
     if (activePlayerId) {
       updatePlayerCoins(activePlayerId, -50, 'Temps écoulé');
-      updatePlayerStatus(activePlayerId);
+      updatePlayerStatusLocal(activePlayerId);
     }
     setTimeout(moveToNextPlayer, 3000);
   };
@@ -113,7 +114,7 @@ const QuizRound1: React.FC = () => {
     if (index === effectiveCorrectIndex) {
       updatePlayerCoins(activePlayerId, 100, 'Bonne réponse');
     } else {
-      updatePlayerStatus(activePlayerId);
+      updatePlayerStatusLocal(activePlayerId);
       updatePlayerCoins(activePlayerId, -75, 'Mauvaise réponse');
     }
 
@@ -146,16 +147,17 @@ const QuizRound1: React.FC = () => {
     setTimeout(() => setCoinChanges(prev => ({ ...prev, [id]: 0 })), 2000);
   };
 
-  const updatePlayerStatus = async (id: string) => {
-    // 1. on lit l’état courant (c’est déjà à jour dans playerStatuses)
+  const updatePlayerStatusLocal = async (id: string) => {
     const current = playerStatuses[id] ?? 'green';
     const next    = current === 'green' ? 'orange' : 'red';
 
-    // 2. on met à jour le state SYNCHRO
+    /* mise à jour locale – pour l’UI du round */
     setPlayerStatuses(prev => ({ ...prev, [id]: next }));
     setShowStatusNotif({ playerId: id, status: next });
 
-    // 3. effets de bord asynchrones
+    /* propagation globale → visible dans les autres pages */
+    updatePlayerStatus(id, next);
+
     if (next === 'red') {
       await startDuel(id);
       navigate(`/duel-select/${roomId}/${id}`);
@@ -232,7 +234,7 @@ const QuizRound1: React.FC = () => {
                       isActive
                       showCoins
                       coinChange={coinChanges[activePlayer.id] || 0}
-                      status={playerStatuses[activePlayer.id] || 'green'}
+                      status={activePlayer.status || 'green'}
                   />
                 </div>
               </div>

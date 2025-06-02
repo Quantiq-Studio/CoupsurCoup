@@ -250,12 +250,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
     // Update player status (green, orange, red, eliminated)
     const updatePlayerStatus = (playerId: string, status: PlayerStatus) => {
-        setPlayerStatus(prev => ({
-            ...prev,
-            [playerId]: status
-        }));
+        /* map global “playerStatus” (inchangé) */
+        setPlayerStatus(prev => ({ ...prev, [playerId]: status }));
 
-        // If player is eliminated, update that flag too
+        /* on propage dans le tableau players  */
+        setPlayers(prev =>
+            prev.map(p => p.id === playerId ? { ...p, status } : p)
+        );
+
+        /* logique d’élimination éventuelle */
         if (status === 'eliminated') {
             eliminatePlayer(playerId);
         }

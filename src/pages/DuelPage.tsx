@@ -6,8 +6,9 @@ import QuestionDisplay from '@/components/game/QuestionDisplay';
 import OptionButton from '@/components/game/OptionButton';
 import PlayerStatus from '@/components/game/PlayerStatus';
 import {useBotTurn} from '@/hooks/useBotTurn';
-import {ArrowLeft} from 'lucide-react';
+import {CheckCircle, XCircle} from 'lucide-react';
 import {GameButton} from '@/components/ui/game-button';
+import {cn} from "@/lib/utils.ts";
 
 /* ------------------------------------------------------------------ */
 const DuelPage: React.FC = () => {
@@ -21,6 +22,7 @@ const DuelPage: React.FC = () => {
         players,
         setCurrentRound,
         setGameMode,
+        currentPlayer,
     } = useGame();
 
     const challenger = players.find(p => p.id === challengerId);
@@ -90,11 +92,11 @@ const DuelPage: React.FC = () => {
         else eliminatePlayer(opponentId!);
 
         // on revient à la phase sélective (round1) après 2 s
-        setTimeout(() => {
+        /*setTimeout(() => {
             setCurrentRound(1);
             setGameMode('phase_selective');
             navigate(`/round1/${roomId}`);
-        }, 2000);
+        }, 5000);*/
     };
 
     const handleClick = (i: number) => {
@@ -123,9 +125,9 @@ const DuelPage: React.FC = () => {
 
             {/* --- Challenger / Opponent en haut --------------------------- */}
             <div className="flex justify-center gap-8 mb-6">
-                <PlayerStatus player={challenger!} isActive showCoins/>
+                <PlayerStatus player={challenger!} status={challenger.status} showCoins/>
                 <span className="text-2xl text-white font-bold">VS</span>
-                <PlayerStatus player={opponent!} isActive showCoins/>
+                <PlayerStatus player={opponent!} status={opponent.status} showCoins/>
             </div>
 
             {/* =====================  PHASE CHOIX THEME  =================== */}
@@ -139,11 +141,7 @@ const DuelPage: React.FC = () => {
                                 key={idx}
                                 variant="secondary"
                                 onClick={() => setChosen(idx === 0 ? 'A' : 'B')}
-                                disabled={
-                                    !!opponent?.isBot ||
-                                    opponent?.id !== challengerId &&
-                                    opponent?.id !== players.find(p => p.id === challengerId)?.id
-                                }
+                                disabled={currentPlayer?.id !== opponentId}  // ← simplifié
                             >
                                 {q.theme ?? q.category}
                             </GameButton>
@@ -161,7 +159,7 @@ const DuelPage: React.FC = () => {
                         difficulty={question.difficulty}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                         {opts.map((opt, idx) => {
                             const hidden = opt === question.hiddenAnswer;
                             const reveal = showResult || selected === idx;
@@ -174,7 +172,7 @@ const DuelPage: React.FC = () => {
                                     incorrect={
                                         showResult && selected === idx && idx !== correctIndex
                                     }
-                                    disabled={showResult}
+                                    disabled={showResult || currentPlayer?.id !== opponentId}
                                     onClick={() => handleClick(idx)}
                                 />
                             );
@@ -182,11 +180,30 @@ const DuelPage: React.FC = () => {
                     </div>
 
                     {showResult && (
-                        <p className="text-center mt-6 text-white">
-                            {selected === correctIndex
-                                ? `${opponent?.name} triomphe !`
-                                : `${opponent?.name} échoue…`}
-                        </p>
+                        <div
+                            className={cn(
+                                'flex items-center justify-center gap-3 mt-6 px-4 py-3 rounded-lg mx-auto max-w-xs animate-bounce-in',
+                                selected === correctIndex
+                                    ? 'bg-green-500/20 text-green-300 ring-2 ring-green-400'
+                                    : 'bg-red-500/20 text-red-300 ring-2 ring-red-400'
+                            )}
+                        >
+                            {selected === correctIndex ? (
+                                <>
+                                    <CheckCircle className="h-6 w-6 flex-shrink-0"/>
+                                    <span className="font-semibold">
+          {opponent?.name} triomphe !
+        </span>
+                                </>
+                            ) : (
+                                <>
+                                    <XCircle className="h-6 w-6 flex-shrink-0"/>
+                                    <span className="font-semibold">
+          {opponent?.name} échoue…
+        </span>
+                                </>
+                            )}
+                        </div>
                     )}
                 </div>
             )}
