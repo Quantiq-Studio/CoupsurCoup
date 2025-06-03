@@ -1,70 +1,87 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useGame } from '@/context/GameContext';
-import { Progress } from '@/components/ui/progress';
-import QuestionDisplay from '@/components/game/QuestionDisplay';
-import OptionButton from '@/components/game/OptionButton';
-import RoundTitle from '@/components/game/RoundTitle';
-import PlayerStatus from '@/components/game/PlayerStatus';
-import { GameNotification } from '@/components/ui/game-notification';
-import { TimerIcon, AlertTriangle, AlertCircle, ArrowDown } from 'lucide-react';
-import { Player } from '@/context/GameTypes';
-import { useToast } from '@/hooks/use-toast';
-import { useBotTurn } from '@/hooks/useBotTurn';     // <-- nouveau hook
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  TimerIcon,
+  AlertTriangle,
+  AlertCircle,
+  ArrowDown,
+} from 'lucide-react';
+
+import { useGame }           from '@/context/GameContext';
+import { Progress }          from '@/components/ui/progress';
+import RoundTitle            from '@/components/game/RoundTitle';
+import QuestionDisplay       from '@/components/game/QuestionDisplay';
+import OptionButton          from '@/components/game/OptionButton';
+import PlayerStatus          from '@/components/game/PlayerStatus';
+import { GameNotification }  from '@/components/ui/game-notification';
+import { useBotTurn }        from '@/hooks/useBotTurn';
+import { useToast }          from '@/hooks/use-toast';
+import { databases }         from '@/lib/appwrite';
 
 /* ------------------------------------------------------------------ */
+const DATABASE_ID         = '68308ece00320290574e';
+const GAMES_COLLECTION_ID = '68308f180030b8019d46';
 
+/* ------------------------------------------------------------------ */
 const QuizRound1: React.FC = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const { roomId } = useParams<{ roomId: string }>();
+  const navigate    = useNavigate();
+  const { toast }   = useToast();
 
+  /* ---------------------- contexte ---------------------- */
   const {
+    /* état global jeu ------------------------------------ */
     questions,
     currentQuestionIndex,
     setCurrentQuestionIndex,
     players,
+    currentPlayer,
+
+    /* timer ---------------------------------------------- */
     timeRemaining,
     setTimeRemaining,
-    currentPlayer,
+
+    /* helpers -------------------------------------------- */
     addCoins,
+    updatePlayerStatus,
     startDuel,
-      updatePlayerStatus
+
+    /* gestion round -------------------------------------- */
+    switchingRound,
+    unlockRoundSwitch,
   } = useGame();
 
-  /* ----------------------- State locaux ----------------------- */
+  /* déverrouille la protection de navigation au montage */
+  useEffect(() => unlockRoundSwitch(), []);
+
+  /* ------------------- state locaux -------------------- */
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [showResult, setShowResult]         = useState(false);
+  const [showResult,     setShowResult]     = useState(false);
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
-  const [playerStatuses, setPlayerStatuses] = useState<
+  const [localStatuses, setLocalStatuses] = useState<
       Record<string, 'green' | 'orange' | 'red'>
   >({});
   const [coinChanges, setCoinChanges] = useState<Record<string, number>>({});
-  const [showStatusNotif, setShowStatusNotif] = useState<{
-    playerId: string;
-    status: 'orange' | 'red';
+  const [statusNotif, setStatusNotif] = useState<{
+    playerId: string; status: 'orange' | 'red';
   } | null>(null);
 
-  /* ------------------------------------------------------------- */
+  /* -------------------- calculs ------------------------ */
   const currentQuestion = questions[currentQuestionIndex];
   const activePlayers   = players.filter(p => !p.isEliminated);
 
-  /* ---------- options visibles (avec « ? » si réponse cachée) --- */
-  const opts = useMemo<string[]>(() => {
+  const opts = useMemo(() => {
     if (!currentQuestion) return [];
     const base = [...(currentQuestion.options ?? [])];
-
     if (currentQuestion.hiddenAnswer && !base.includes(currentQuestion.hiddenAnswer)) {
-      base.push(currentQuestion.hiddenAnswer); // on la pousse pour pouvoir l'afficher
+      base.push(currentQuestion.hiddenAnswer);
     }
     return base;
   }, [currentQuestion]);
 
-  /* ---------------- index correct réel (tous modes) ------------- */
-  const effectiveCorrectIndex = useMemo(() => {
+  const correctIdx = useMemo(() => {
     if (!currentQuestion) return -1;
-
     if (currentQuestion.correct === 'autre') {
       return opts.findIndex(o => o === currentQuestion.hiddenAnswer);
     }
@@ -72,100 +89,113 @@ const QuizRound1: React.FC = () => {
       const n = parseInt(currentQuestion.correct.replace('visible', ''), 10);
       return Number.isNaN(n) ? -1 : n - 1;
     }
-    if (currentQuestion.correctIndex != null) return currentQuestion.correctIndex;
-    return -1;
+    return currentQuestion.correctIndex ?? -1;
   }, [currentQuestion, opts]);
 
-  /* --------------------- Init tour de table --------------------- */
+  /* -------------------- init tour ---------------------- */
   useEffect(() => {
-    if (activePlayers.length && !Object.keys(playerStatuses).length) {
-      const init: Record<string, 'green'> = {};
-      activePlayers.forEach(p => (init[p.id] = 'green'));
-      setPlayerStatuses(init);
+    if (activePlayers.length && !activePlayerId) {
       setActivePlayerId(activePlayers[0].id);
-    }
-  }, [activePlayers, playerStatuses]);
 
-  /* ------------------------- Timer ------------------------------ */
+      if (!Object.keys(localStatuses).length) {
+        const init: Record<string, 'green'> = {};
+        activePlayers.forEach(p => (init[p.id] = 'green'));
+        setLocalStatuses(init);
+      }
+    }
+  }, [activePlayers, activePlayerId, localStatuses]);
+
+  /* -------------------- timer -------------------------- */
   useEffect(() => {
     if (showResult || !activePlayerId) return;
     if (timeRemaining > 0) {
       const t = setTimeout(() => setTimeRemaining(t => t - 1), 1000);
       return () => clearTimeout(t);
     }
-    handleTimeUp();
+    onTimeUp();
   }, [timeRemaining, showResult, activePlayerId, setTimeRemaining]);
 
-  const handleTimeUp = () => {
+  const onTimeUp = () => {
     setShowResult(true);
     if (activePlayerId) {
-      updatePlayerCoins(activePlayerId, -50, 'Temps écoulé');
-      updatePlayerStatusLocal(activePlayerId);
+      changeCoins(activePlayerId, -50);
+      penalise(activePlayerId);
     }
-    setTimeout(moveToNextPlayer, 3000);
+    setTimeout(nextTurn, 3000);
   };
 
-  /* ------------------------- Sélection --------------------------- */
-  const handleOptionSelect = (index: number) => {
-    if (showResult || selectedOption != null || !activePlayerId) return;
-    setSelectedOption(index);
+  /* ---------------- sélection -------------------------- */
+  const onSelect = (idx: number) => {
+    if (showResult || selectedOption !== null || !activePlayerId) return;
+
+    setSelectedOption(idx);
     setShowResult(true);
 
-    if (index === effectiveCorrectIndex) {
-      updatePlayerCoins(activePlayerId, 100, 'Bonne réponse');
+    if (idx === correctIdx) {
+      changeCoins(activePlayerId, 100);
     } else {
-      updatePlayerStatusLocal(activePlayerId);
-      updatePlayerCoins(activePlayerId, -75, 'Mauvaise réponse');
+      penalise(activePlayerId);
+      changeCoins(activePlayerId, -75);
     }
-
-    setTimeout(moveToNextPlayer, 3000);
+    setTimeout(nextTurn, 3000);
   };
 
-  /* -------------------- Simulation bot -------------------------- */
+  /* ------------------- bot ----------------------------- */
   const activePlayer = activePlayerId
       ? players.find(p => p.id === activePlayerId)
       : undefined;
 
   useBotTurn({
     isBotTurn:
-        !!activePlayer?.isBot &&
-        !showResult &&
-        effectiveCorrectIndex >= 0 &&
-        opts.length > 0,
-    answer: handleOptionSelect,
-    correctIndex: effectiveCorrectIndex,
+        !!activePlayer?.isBot && !showResult && correctIdx >= 0 && opts.length > 0,
+    answer: onSelect,
+    correctIndex: correctIdx,
     nbOptions: opts.length,
     successRate: 0.2,
     minDelayMs: 1000,
     maxDelayMs: 6000,
   });
 
-  /* -------------------- Helpers joueurs ------------------------- */
-  const updatePlayerCoins = (id: string, amount: number, _reason: string) => {
-    addCoins(id, amount);
-    setCoinChanges(prev => ({ ...prev, [id]: amount }));
+  /* ---------------- helpers --------------------------- */
+  const changeCoins = (id: string, delta: number) => {
+    addCoins(id, delta);
+    setCoinChanges(prev => ({ ...prev, [id]: delta }));
     setTimeout(() => setCoinChanges(prev => ({ ...prev, [id]: 0 })), 2000);
   };
 
-  const updatePlayerStatusLocal = async (id: string) => {
-    const current = playerStatuses[id] ?? 'green';
-    const next    = current === 'green' ? 'orange' : 'red';
+  const penalise = async (id: string) => {
+    const cur = localStatuses[id] ?? 'green';
+    const next = cur === 'green' ? 'orange' : 'red';
 
-    /* mise à jour locale – pour l’UI du round */
-    setPlayerStatuses(prev => ({ ...prev, [id]: next }));
-    setShowStatusNotif({ playerId: id, status: next });
-
-    /* propagation globale → visible dans les autres pages */
+    setLocalStatuses(prev => ({ ...prev, [id]: next }));
+    setStatusNotif({ playerId: id, status: next });
     updatePlayerStatus(id, next);
 
     if (next === 'red') {
       await startDuel(id);
+      try {
+        await databases.updateDocument(
+            DATABASE_ID,
+            GAMES_COLLECTION_ID,
+            roomId!,
+            { round: 2 }
+        );
+      } catch {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de mettre à jour le round du jeu.',
+          variant: 'destructive',
+        });
+      }
       navigate(`/duel-select/${roomId}/${id}`);
     }
   };
 
-  const moveToNextPlayer = () => {
-    setShowStatusNotif(null);
+  /* --------------- tour suivant ----------------------- */
+  const nextTurn = () => {
+    if (switchingRound) return;          // blocage pendant transition
+
+    setStatusNotif(null);
     setSelectedOption(null);
     setShowResult(false);
     setTimeRemaining(10);
@@ -173,43 +203,44 @@ const QuizRound1: React.FC = () => {
     setCurrentQuestionIndex(i => (i + 1) % questions.length);
 
     if (activePlayerId) {
-      const idx = activePlayers.findIndex(p => p.id === activePlayerId);
-      setActivePlayerId(activePlayers[(idx + 1) % activePlayers.length].id);
+      const pos = activePlayers.findIndex(p => p.id === activePlayerId);
+      setActivePlayerId(activePlayers[(pos + 1) % activePlayers.length].id);
     }
   };
 
+  /* ------------------- UI helpers --------------------- */
+  const renderNotif = () => {
+    if (!statusNotif) return null;
+    const pl = players.find(p => p.id === statusNotif.playerId);
+    if (!pl) return null;
 
-  /* -------------------------- UI -------------------------------- */
-  const renderStatusNotif = () => {
-    if (!showStatusNotif) return null;
-    const p = players.find(pl => pl.id === showStatusNotif.playerId);
-    if (!p) return null;
     return (
         <div className="mb-4 animate-bounce-in">
           <GameNotification
-              title={showStatusNotif.status === 'orange' ? 'Attention !' : 'Danger !'}
+              title={statusNotif.status === 'orange' ? 'Attention !' : 'Danger !'}
               message={
-                showStatusNotif.status === 'orange'
-                    ? `${p.name} est en alerte, encore une erreur et c'est le duel !`
-                    : `${p.name} est en danger ! Duel imminent !`
+                statusNotif.status === 'orange'
+                    ? `${pl.name} reçoit un avertissement.`
+                    : `${pl.name} part en duel !`
               }
-              variant={showStatusNotif.status === 'orange' ? 'warning' : 'error'}
-              icon={showStatusNotif.status === 'orange' ? AlertTriangle : AlertCircle}
+              variant={statusNotif.status === 'orange' ? 'warning' : 'error'}
+              icon={statusNotif.status === 'orange' ? AlertTriangle : AlertCircle}
           />
         </div>
     );
   };
 
-  /* -------------------------------------------------------------- */
+  /* -------------------- render ------------------------ */
   return (
       <div className="min-h-screen bg-game-gradient flex flex-col">
         <div className="game-container flex flex-col flex-grow py-8">
           <RoundTitle
               roundNumber={1}
               title="Phase Sélective"
-              description="Répondez correctement pour rester dans la course! Deux erreurs vous mènent au Duel Décisif."
+              description="Répondez correctement pour rester dans la course ! Deux erreurs vous envoient en duel."
           />
 
+          {/* bandeau question / timer */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
               <span>Question {currentQuestionIndex + 1}</span>
@@ -223,8 +254,9 @@ const QuizRound1: React.FC = () => {
             )}
           </div>
 
-          {renderStatusNotif()}
+          {renderNotif()}
 
+          {/* joueur actif */}
           {activePlayer && (
               <div className="mb-6 animate-fade-in">
                 <h3 className="text-center text-lg mb-2 text-white">Au tour de</h3>
@@ -242,6 +274,7 @@ const QuizRound1: React.FC = () => {
 
           <Progress value={(timeRemaining / 10) * 100} className="h-2 mb-8" />
 
+          {/* question + options */}
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-8 animate-zoom-in">
             {currentQuestion && (
                 <QuestionDisplay
@@ -263,14 +296,14 @@ const QuizRound1: React.FC = () => {
                         isHidden={hidden}
                         revealed={revealed}
                         selected={selectedOption === idx}
-                        correct={showResult && idx === effectiveCorrectIndex}
-                        incorrect={showResult && selectedOption === idx && idx !== effectiveCorrectIndex}
+                        correct={showResult && idx === correctIdx}
+                        incorrect={showResult && selectedOption === idx && idx !== correctIdx}
                         disabled={
                             showResult ||
                             activePlayer?.id !== currentPlayer?.id ||
                             currentPlayer?.isBot
                         }
-                        onClick={() => handleOptionSelect(idx)}
+                        onClick={() => onSelect(idx)}
                     />
                 );
               })}
@@ -278,7 +311,7 @@ const QuizRound1: React.FC = () => {
 
             {showResult && (
                 <div className="mt-6 text-center animate-bounce-in">
-                  {selectedOption === effectiveCorrectIndex ? (
+                  {selectedOption === correctIdx ? (
                       <p className="text-xl font-bold text-green-400">Bonne réponse !</p>
                   ) : (
                       <p className="text-xl font-bold text-red-400">
@@ -287,13 +320,14 @@ const QuizRound1: React.FC = () => {
                   )}
                   {selectedOption != null && (
                       <p className="mt-2 text-white">
-                        La bonne réponse était : {opts[effectiveCorrectIndex]}
+                        La bonne réponse était : {opts[correctIdx]}
                       </p>
                   )}
                 </div>
             )}
           </div>
 
+          {/* statut joueurs */}
           <div className="mt-auto">
             <h3 className="text-lg font-bold mb-2 flex items-center text-white">
               Statut des joueurs <ArrowDown className="ml-2 h-4 w-4" />
@@ -304,7 +338,7 @@ const QuizRound1: React.FC = () => {
                       key={p.id}
                       player={p}
                       isActive={p.id === activePlayerId}
-                      status={playerStatuses[p.id] || 'green'}
+                      status={localStatuses[p.id] || 'green'}
                       coinChange={coinChanges[p.id] || 0}
                       compact
                   />

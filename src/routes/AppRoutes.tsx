@@ -3,7 +3,7 @@ import {useGame} from "@/context/GameContext.tsx";
 import HomePage from "@/pages/HomePage";
 import WaitingRoom from "@/pages/WaitingRoom.tsx";
 import QuizRound1 from "@/pages/QuizRound1.tsx";
-import QuizRound2 from "@/pages/QuizRound2.tsx";
+import QuizRound2 from "@/pages/QuizRound3.tsx";
 import QuizRound3 from "@/pages/QuizRound3.tsx";
 import DuelPage from "@/pages/DuelPage.tsx";
 import FinalGrid from "@/pages/FinalGrid.tsx";
@@ -29,7 +29,6 @@ const AppRoutes = () => {
             <Route path="/waiting-room/:roomId" element={<WaitingRoom />} />
             <Route path="/round1/:roomId" element={<QuizRound1 />} />
             <Route path="/duel-select/:roomId/:challengerId" element={<DuelSelectPage />} />
-            <Route path="/round2/:roomId" element={<QuizRound2 />} />
             <Route path="/round3/:roomId" element={<QuizRound3 />} />
             <Route path="/duel/:roomId/:challengerId/:opponentId" element={<DuelPage />} />
             <Route path="/final-grid/:roomId" element={<FinalGrid />} />

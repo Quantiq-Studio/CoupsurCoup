@@ -1,4 +1,4 @@
-import React, {createContext, useState, useContext} from "react";
+import React, {createContext, useState, useContext, useRef} from "react";
 import {
     Player,
     PlayerStatus,
@@ -18,7 +18,6 @@ import {Query} from "appwrite";
 ────────────────────────────────────────────── */
 const DATABASE_ID = "68308ece00320290574e";
 const QUESTIONS_COLLECTION_ID = "68308f0a000e5d7eb2ee";
-const GAMES_COLLECTION_ID = "68308f180030b8019d46";
 
 /* ────────────────────────────────────────────
    Helpers
@@ -43,7 +42,7 @@ const toQuestion = (doc: any): Question => {
         hiddenAnswer: doc.hiddenAnswer,
         correct: doc.correct,
         correctIndex: doc.correctIndex,
-        propositions: options.length ? options : undefined,
+        propositions: doc.propositions,
         falseIndex: doc.falseIndex,
         theme: doc.theme,
     };
@@ -127,6 +126,7 @@ type GameContextType = {
     setCoinTransactions: React.Dispatch<React.SetStateAction<CoinTransaction[]>>;
 
     startDuel: (challengerId: string) => Promise<void>;
+    goToRound: (round: number) => void;
 
     /* Fonctions de jeu */
     addPlayer: (player: Player) => void;
@@ -143,6 +143,8 @@ type GameContextType = {
     /* ↓↓↓  NOUVEAU  ↓↓↓ */
     loadQuestions: (ids?: string[]) => Promise<string[]>;
     getRoundBounds: (round: number) => [number, number];
+    unlockRoundSwitch: () => void;
+    switchingRound?: boolean;
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -172,6 +174,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
     const [playerStatus, setPlayerStatus] = useState<Record<string, PlayerStatus>>({});
     const [coinTransactions, setCoinTransactions] = useState<CoinTransaction[]>([]);
+
+    const isSwitchingRound = useRef(false);
+    const unlockRoundSwitch = () => {
+        isSwitchingRound.current = false;
+    };
 
     /* ── Pioche & chargement des questions ───────────────────── */
 
@@ -224,6 +231,31 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         [55, 59], // R6 – grille_indices
     ];
     const getRoundBounds = (round: number): [number, number] => ROUND_BOUNDS[round - 1] ?? [0, 0];
+
+    /**
+     * Change localement de round & de mode, et repositionne l’index
+     * sur la première question du round.
+     * @param round   Round cible (1-6)
+     */
+    const goToRound = (round: number) => {
+        isSwitchingRound.current = true;          // ← on bloque
+
+        const [startIdx] = getRoundBounds(round);
+        setCurrentRound(round);
+
+        // map round → mode
+        const modeMap: Record<number, GameMode> = {
+            1: 'phase_selective',
+            2: 'duel',
+            3: 'liste_piegee',
+            4: 'duel',
+            5: 'chrono_pression',
+            6: 'grille_indices',
+        };
+        setGameMode(modeMap[round]);
+        setCurrentQuestionIndex(startIdx);
+        console.log("Changement de round :", round, "Mode :", modeMap[round]);
+    };
 
     /**
      * Charge les questions :
@@ -398,20 +430,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
      *  - persiste dans la collection Game
      */
     const startDuel = async (challengerId: string) => {
-        const [duelIdx] = getRoundBounds(2);              // → 25
+        const [duelIdx] = getRoundBounds(2);// → 25
+        goToRound(2);
         setCurrentRound(2);
         setGameMode('duel');
         setCurrentQuestionIndex(duelIdx);
-
-        // si une instance “Game” existe on la pousse côté Appwrite
-        if (game) {
-            await databases.updateDocument(
-                DATABASE_ID,
-                GAMES_COLLECTION_ID,
-                game.id,
-                { round: 2, currentQuestionIndex: duelIdx }
-            ).catch(() => {});
-        }
     };
 
     // Add a new player
@@ -532,6 +555,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         loadQuestions,
         getRoundBounds,
         startDuel,
+        goToRound,
+        unlockRoundSwitch,
     };
 
     return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
