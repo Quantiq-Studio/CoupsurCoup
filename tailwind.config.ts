@@ -20,7 +20,7 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'playfair': ['"Playfair Display"', 'serif'],
+				'fugazone': ['Fugaz One', 'system-ui'],
 				'poppins': ['Poppins', 'sans-serif'],
 			},
 			colors: {

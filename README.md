@@ -26,7 +26,7 @@
 
 ## 🗂️ Structure du projet
 ```
-s📁 src/
+📁 src/
 ├── 📁 components/       # Composants UI personnalisés
 ├── 📁 context/          # Context React : état du jeu et joueur
 ├── 📁 data/             # Données statiques (ex. : avatars, emojis, etc.)
