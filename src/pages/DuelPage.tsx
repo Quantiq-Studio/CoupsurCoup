@@ -37,11 +37,12 @@ const DuelPage: React.FC = () => {
 
         switchingRound,
         unlockRoundSwitch,
+        currentRound
     } = useGame();
 
     /* déverrouille dès le montage (utile si l’on revient
        directement du round précédent) */
-    useEffect(() => unlockRoundSwitch(), []);
+    useEffect(() => unlockRoundSwitch(), [unlockRoundSwitch]);
 
     const challenger = players.find(p => p.id === challengerId);
     const opponent   = players.find(p => p.id === opponentId);
@@ -112,24 +113,33 @@ const DuelPage: React.FC = () => {
         if (answerIsRight) eliminatePlayer(challengerId!);
         else               eliminatePlayer(opponentId!);
 
+        /* on détermine le round cible selon la situation courante */
+        console.log('currentRound', currentRound);
+        const nextRound = currentRound === 2 ? 3 : 5;   // 2→3   |   4→5
+        console.log('nextRound', nextRound);
+
         /* petite pause pour l’animation “bonne / mauvaise” */
         setTimeout(async () => {
-            /* Go → Round 3 (déclenche le flag switchingRound) */
-            goToRound(3);
+            goToRound(nextRound);               // ← flag switchingRound = true
 
-            /* persistence en base */
+            /* persistance */
             try {
                 await databases.updateDocument(
                     DATABASE_ID,
                     GAMES_COLLECTION_ID,
                     roomId!,
-                    { round: 3 },
+                    { round: nextRound },           // ← on stocke le bon round
                 );
             } catch (err) {
                 console.error('Sync round → BDD échouée :', err);
             }
 
-            navigate(`/round3/${roomId}`);
+            /* navigation */
+            navigate(
+                nextRound === 3
+                    ? `/round3/${roomId}`           // Liste Piégée
+                    : `/round5/${roomId}`           // Chrono-Pression
+            );
         }, 2000);
     };
 

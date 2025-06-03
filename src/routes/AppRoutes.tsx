@@ -3,8 +3,8 @@ import {useGame} from "@/context/GameContext.tsx";
 import HomePage from "@/pages/HomePage";
 import WaitingRoom from "@/pages/WaitingRoom.tsx";
 import QuizRound1 from "@/pages/QuizRound1.tsx";
-import QuizRound2 from "@/pages/QuizRound3.tsx";
 import QuizRound3 from "@/pages/QuizRound3.tsx";
+import QuizRound5 from "@/pages/QuizRound5.tsx";
 import DuelPage from "@/pages/DuelPage.tsx";
 import FinalGrid from "@/pages/FinalGrid.tsx";
 import ResultsPage from "@/pages/ResultsPage.tsx";
@@ -31,7 +31,7 @@ const AppRoutes = () => {
             <Route path="/duel-select/:roomId/:challengerId" element={<DuelSelectPage />} />
             <Route path="/round3/:roomId" element={<QuizRound3 />} />
             <Route path="/duel/:roomId/:challengerId/:opponentId" element={<DuelPage />} />
-            <Route path="/final-grid/:roomId" element={<FinalGrid />} />
+            <Route path="/round5/:roomId" element={<QuizRound5 />} />
             <Route path="/results/:roomId" element={<ResultsPage />} />
             <Route path="/profile" element={
                 currentPlayer?.email ? <ProfilePage /> : <Navigate to="/signin" replace />

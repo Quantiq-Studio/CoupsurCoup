@@ -190,7 +190,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
             { type: "liste_piegee",    count: 3  }, // Round 3
             { type: "duel",            count: 1  }, // Round 4
             { type: "chrono_pression", count: 25 }, // Round 5
-            { type: "grille_indices",  count: 5  }, // Round 6
         ];
 
         const ids: string[] = [];
@@ -228,7 +227,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         [26, 28], // R3 – liste_piegee
         [29, 29], // R4 – duel
         [30, 54], // R5 – chrono_pression
-        [55, 59], // R6 – grille_indices
     ];
     const getRoundBounds = (round: number): [number, number] => ROUND_BOUNDS[round - 1] ?? [0, 0];
 
@@ -250,7 +248,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
             3: 'liste_piegee',
             4: 'duel',
             5: 'chrono_pression',
-            6: 'grille_indices',
         };
         setGameMode(modeMap[round]);
         setCurrentQuestionIndex(startIdx);
@@ -424,17 +421,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         );
     };
 
-    /** Lance un duel :
-     *  - passe round = 2 + mode = 'duel'
-     *  - positionne le pointeur sur la 1ʳᵉ question « duel » (index 25)
-     *  - persiste dans la collection Game
-     */
+
     const startDuel = async (challengerId: string) => {
-        const [duelIdx] = getRoundBounds(2);// → 25
-        goToRound(2);
-        setCurrentRound(2);
+        // ► on choisit maintenant le bon round‐cible dynamiquement
+        const duelRound = currentRound < 3 ? 2 : 4;     // 1-2 ➜ 2 | 3-4 ➜ 4
+        const [duelIdx] = getRoundBounds(duelRound);    // 25 ou 29 selon le cas
+
+        goToRound(duelRound);            // flag + mode
+        setCurrentRound(duelRound);
         setGameMode('duel');
-        setCurrentQuestionIndex(duelIdx);
+        setCurrentQuestionIndex(duelIdx); // 1ʳᵉ question « duel »
     };
 
     // Add a new player

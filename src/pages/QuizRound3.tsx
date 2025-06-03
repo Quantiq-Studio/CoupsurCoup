@@ -54,7 +54,6 @@ const QuizRound3: React.FC = () => {
   const currentQuestion = questions[currentQuestionIndex];
   const activePlayers   = players.filter(p => !p.isEliminated);
 
-  console.log("Propositions pour la question actuelle :", currentQuestion?.propositions);
   /* 6 vraies + 1 fausse */
   const propositions = useMemo(
       () => currentQuestion?.propositions ?? [],
@@ -90,6 +89,30 @@ const QuizRound3: React.FC = () => {
     /* temps écoulé = erreur */
     handleSelection(trapIndex);
   }, [timeRemaining, showRes, activePlayerId, trapIndex, setTimeRemaining, switchingRound]);
+
+  /* ---------------------------------------------------------------
+   Saut automatique : si toutes les bonnes réponses sont trouvées
+   --------------------------------------------------------------- */
+  useEffect(() => {
+    // on vérifie à chaque changement du set ou de la liste
+    if (
+        answeredIndices.size === propositions.length - 1 && // il ne reste que le piège
+        !switchingRound &&                                  // pas de transition en cours
+        !showRes                                            // pas de feedback visible
+    ) {
+      // petite pause visuelle facultative
+      setTimeout(() => {
+        // on prépare la question/liste suivante
+        setAnsweredIndices(new Set());
+        setSelectedIdx(null);
+        setCurrentQuestionIndex(i => (i + 1) % questions.length);
+        setTimeRemaining(15);
+        // on conserve le même joueur actif (ou le tour suivant sera géré normalement)
+      }, 800); // délai court pour que les joueurs voient que tout est validé
+    }
+  }, [answeredIndices, propositions.length, switchingRound, showRes,
+    setCurrentQuestionIndex, setAnsweredIndices, setSelectedIdx,
+    setTimeRemaining, questions.length]);
 
   /* ------------ clic humain / bot ------------ */
   const handleSelection = (idx: number): void => {
@@ -134,14 +157,14 @@ const QuizRound3: React.FC = () => {
     setStatusNotif({ playerId, status: nextStatus as any });
 
     if (nextStatus === 'red') {
-      /*await startDuel(id);
+      await startDuel(playerId);
       await databases.updateDocument(
           DATABASE_ID, GAMES_COLLECTION_ID, roomId!, { round: 4 },
       ).catch(() =>
           toast({ title:'Erreur', description:'Maj round impossible', variant:'destructive' }),
       );
 
-      navigate(`/duel-select/${roomId}/${id}`);*/
+      navigate(`/duel-select/${roomId}/${playerId}`);
     }
   };
 
@@ -169,14 +192,33 @@ const QuizRound3: React.FC = () => {
       ? players.find(p => p.id === activePlayerId)
       : undefined;
 
+  /* indices encore cliquables (non déjà validés) */
+  const availableIndices = propositions
+      .map((_, i) => i)
+      .filter(i => !answeredIndices.has(i));
+
   useBotTurn({
-    isBotTurn  : !!activePlayer?.isBot && !showRes && !switchingRound,
-    answer     : i => handleSelection(i),
-    correctIndex: 0,              // peu importe, choix aléa
-    nbOptions   : propositions.length,
-    successRate : 0.75,
-    minDelayMs  : 1200,
-    maxDelayMs  : 4000,
+    /* le bot ne joue que s’il est actif, qu’il n’y a pas de résultat à l’écran,
+       qu’on n’est pas en transition… et qu’il reste au moins un choix possible */
+    isBotTurn:
+        !!activePlayer?.isBot &&
+        !showRes &&
+        !switchingRound &&
+        availableIndices.length > 0,
+
+    /* on passe la fonction answer qui pioche dans les indices restants */
+    answer: () => {
+      const chosen =
+          availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      handleSelection(chosen);
+    },
+
+    /* Les trois lignes suivantes n’influent plus vraiment, on laisse par défaut */
+    correctIndex: 0,
+    nbOptions: availableIndices.length,
+    successRate: 0.75,
+    minDelayMs: 1200,
+    maxDelayMs: 4000,
   });
 
   /* ---------- rendu ------------ */
@@ -240,8 +282,6 @@ const QuizRound3: React.FC = () => {
              GRID principal : propositions (gauche) / statuts (droite)
            ========================================================= */}
           <div className="mt-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
-            {/* ---------- Propositions : md:col-span-2 / lg:col-span-3 ---------- */}
-            {/* ---------- Propositions : md:col-span-2 / lg:col-span-3 ---------- */}
             <div className="md:col-span-2 lg:col-span-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
                 {propositions.map((prop, idx) => {
@@ -259,7 +299,6 @@ const QuizRound3: React.FC = () => {
                           selected={isSelected}
                           correct={reveal && idx !== trapIndex}
                           incorrect={isTrapSel}
-                          /* ⬇️  on ajoute `answeredIndices.has(idx)` */
                           disabled={
                               switchingRound ||
                               showRes            ||
@@ -285,7 +324,6 @@ const QuizRound3: React.FC = () => {
               )}
             </div>
 
-            {/* ---------- Statut joueurs : md:col-span-1 ---------- */}
             <div className="md:col-span-1 space-y-3">
               <h3 className="text-lg font-bold flex items-center text-white mb-2">
                 Statut <ArrowDown className="ml-1 h-4 w-4" />
@@ -295,8 +333,9 @@ const QuizRound3: React.FC = () => {
                   <PlayerStatus
                       key={p.id}
                       player={p}
-                      status={p.status}
-                      coinChange={0}
+                      isActive={p.id === activePlayerId}
+                      status={p.status || 'green'}
+                      coinChange={p.coins || 0}
                       compact
                   />
               ))}

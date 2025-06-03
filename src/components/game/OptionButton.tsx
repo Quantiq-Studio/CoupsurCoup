@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ReactNode } from 'react';
 
 interface OptionButtonProps {
-  label: string;
+  label: ReactNode;
   selected: boolean;
   correct?: boolean;
   incorrect?: boolean;

@@ -70,8 +70,7 @@ export type GameMode =
   | 'phase_selective'
   | 'duel'
   | 'liste_piegee' 
-  | 'chrono_pression' 
-  | 'grille_indices';
+  | 'chrono_pression';
 
 export type Question = {
   id: string;
