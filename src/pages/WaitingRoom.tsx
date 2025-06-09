@@ -196,6 +196,16 @@ const WaitingRoom: React.FC = () => {
         });
       }
 
+      try {
+        const s = await account.getSession('current');
+        if (s.provider === 'anonymous') {
+          await account.deleteSession('current');
+        }
+      } catch {
+        // Si la session est déjà supprimée, on ignore l'erreur
+      }
+
+
       navigate('/');
     } catch (err: any) {
       console.error(err);
