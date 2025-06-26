@@ -4,6 +4,7 @@ import { Query, Models }   from 'appwrite';
 import { useGame }         from '@/context/GameContext';
 import { PlayerDoc }       from '@/types/appwrite';
 import { buildPlayerList } from '@/lib/buildPlayerList';
+import {useNavigate} from "react-router-dom";
 
 interface GameDoc extends Models.Document {
     roomId: string;
@@ -27,6 +28,7 @@ export const useGameRealtime = (roomId?: string) => {
         setCurrentQuestionIndex,
         setPlayers,
     } = useGame();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!roomId) return;
@@ -111,7 +113,7 @@ export const useGameRealtime = (roomId?: string) => {
                     'status=', g.status);
 
                 if (g.status === 'playing') {
-                    window.history.replaceState(null, '', `/round${g.round}/${roomId}`);
+                    navigate(`/round${g.round}/${roomId}`, { replace: true });
                 }
             });
         })();
