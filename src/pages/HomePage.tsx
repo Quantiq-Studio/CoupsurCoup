@@ -14,9 +14,9 @@ import { GameAvatar } from '@/components/ui/game-avatar';
 import { account, databases } from "@/lib/appwrite.ts";
 import { ID, Query } from "appwrite";
 
-const GAMES_COLLECTION_ID = '68308f180030b8019d46';
-const PLAYERS_COLLECTION_ID = '68308f130020e76ceeec';
-const DATABASE_ID = '68308ece00320290574e';
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+const GAMES_COLLECTION_ID = import.meta.env.VITE_APPWRITE_GAMES_COLLECTION_ID;
+const PLAYERS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_PLAYERS_COLLECTION_ID;
 
 const generateRoomId = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();

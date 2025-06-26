@@ -2,8 +2,8 @@
 import { databases } from '@/lib/appwrite';
 import { ID }        from 'appwrite';
 
-const DB  = '68308ece00320290574e';
-const COL = '68308f130020e76ceeec';
+const DB  = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+const COL = import.meta.env.VITE_APPWRITE_PLAYERS_COLLECTION_ID;
 
 export const ensurePlayerDoc = async (user: { $id: string; name?: string }) => {
     try {

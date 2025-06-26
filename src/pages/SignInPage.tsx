@@ -19,6 +19,9 @@ const SignInPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+  const PLAYERS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_PLAYERS_COLLECTION_ID;
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -44,8 +47,8 @@ const SignInPage: React.FC = () => {
       const user = await account.get();
 
       const player = await databases.getDocument(
-          '68308ece00320290574e',
-          '68308f130020e76ceeec',
+          DATABASE_ID,
+          PLAYERS_COLLECTION_ID,
           user.$id
       );
 

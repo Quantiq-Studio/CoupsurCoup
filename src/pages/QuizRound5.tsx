@@ -8,12 +8,14 @@ import QuestionDisplay    from '@/components/game/QuestionDisplay';
 import OptionButton       from '@/components/game/OptionButton';
 import PlayerStatus       from '@/components/game/PlayerStatus';
 import { useBotTurn }     from '@/hooks/useBotTurn';
+import { useGameRealtime } from '@/hooks/useGameRealtime';
 
 /* durée de départ pour chaque candidat (s) */
 const START_TIME = 60;
 
 const QuizRound5: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
+    useGameRealtime(roomId)
     const navigate   = useNavigate();
 
     /* --------- contexte --------- */

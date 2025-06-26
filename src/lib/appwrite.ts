@@ -1,6 +1,6 @@
 import { Client, Account, Databases, Avatars } from 'appwrite';
 
-const client = new Client();
+export const client = new Client();
 client
     .setEndpoint('https://fra.cloud.appwrite.io/v1')
     .setProject('68308c5900097b30072d');

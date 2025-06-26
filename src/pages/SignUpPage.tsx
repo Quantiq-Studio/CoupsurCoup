@@ -22,6 +22,9 @@ const SignUpPage: React.FC = () => {
   const [avatar, setAvatar] = useState<string>('/placeholder.svg');
   const [isLoading, setIsLoading] = useState(false);
 
+  const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+  const PLAYERS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_PLAYERS_COLLECTION_ID;
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -48,8 +51,8 @@ const SignUpPage: React.FC = () => {
       const user = await account.get();
 
       await databases.createDocument(
-          '68308ece00320290574e',
-          '68308f130020e76ceeec',
+          DATABASE_ID,
+          PLAYERS_COLLECTION_ID,
           user.$id,
           {
             name: user.name,

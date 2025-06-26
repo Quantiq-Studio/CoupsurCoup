@@ -16,8 +16,8 @@ import {Query} from "appwrite";
 /* ────────────────────────────────────────────
    Constantes Appwrite
 ────────────────────────────────────────────── */
-const DATABASE_ID = "68308ece00320290574e";
-const QUESTIONS_COLLECTION_ID = "68308f0a000e5d7eb2ee";
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+const QUESTIONS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_QUESTIONS_COLLECTION_ID;
 
 /* ────────────────────────────────────────────
    Helpers

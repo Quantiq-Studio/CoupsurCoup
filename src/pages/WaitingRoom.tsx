@@ -1,155 +1,62 @@
+// src/pages/WaitingRoom.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useToast } from '@/hooks/use-toast';
-import CopyToClipboard from '@/components/game/CopyToClipboard';
-import LoadingSpinner from '@/components/game/LoadingSpinner';
+import { useParams, useNavigate }     from 'react-router-dom';
+import { useGame }                    from '@/context/GameContext';
+import { useGameRealtime }            from '@/hooks/useGameRealtime';
 import { HomeIcon, PlayIcon, TimerIcon, User, AlertTriangle } from 'lucide-react';
-import { GameTitle } from "@/components/ui/game-title";
-import {account, databases} from '@/lib/appwrite';
-import {Permission, Query, Role} from 'appwrite';
+import { useToast }          from '@/hooks/use-toast';
+import { account, databases } from '@/lib/appwrite';
+import { Query }             from 'appwrite';
+import {Button} from "@/components/ui/button.tsx";
+import {GameTitle} from "@/components/ui/game-title.tsx";
+import CopyToClipboard from "@/components/game/CopyToClipboard.tsx";
+import LoadingSpinner from "@/components/game/LoadingSpinner.tsx";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 
-const DATABASE_ID = '68308ece00320290574e';
-const GAMES_COLLECTION_ID = '68308f180030b8019d46';
-const PLAYERS_COLLECTION_ID = '68308f130020e76ceeec';
-const MIN_PLAYERS = 4;
-
-const generateBots = (count: number) => {
-  const names = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Heidi', 'Nina', 'Oscar', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina'];
-  const shuffled = names.sort(() => 0.5 - Math.random()).slice(0, count);
-  return shuffled.map((name, i) => ({
-    id: `bot-${i + 1}`,
-    name,
-    avatar: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=bot${i + 1}`,
-    score: 0,
-    isHost: false,
-    isEliminated: false,
-    coins: 1000,
-    isBot: true,
-  }));
-};
+const DATABASE_ID            = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+const GAMES_COLLECTION_ID    = import.meta.env.VITE_APPWRITE_GAMES_COLLECTION_ID;
+const PLAYERS_COLLECTION_ID  = import.meta.env.VITE_APPWRITE_PLAYERS_COLLECTION_ID;
+const MIN_PLAYERS            = 4;
 
 const WaitingRoom: React.FC = () => {
-  const navigate = useNavigate();
-  const { roomId } = useParams<{ roomId: string }>();
-  const { toast } = useToast();
+  const navigate           = useNavigate();
+  const { roomId }         = useParams<{ roomId: string }>();
+  useGameRealtime(roomId);                          // 📡 temps-réel
+  const { toast }          = useToast();
+
   const {
     currentPlayer,
     players,
-    setPlayers,
     setCurrentRound,
     setCurrentQuestionIndex,
-    loadQuestions
+    loadQuestions,
   } = useGame();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [bots, setBots] = useState<any[]>([]);
-
-  // 💓 Heartbeat toutes les 2 secondes
+  /* ---------------- Heartbeat ---------------- */
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (currentPlayer?.id) {
-        databases.updateDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, currentPlayer.id, {
-          lastSeenAt: new Date().toISOString(),
-        }).catch(() => {});
-      }
+    if (!currentPlayer?.id) return;
+    const id = setInterval(() => {
+      console.log('[waiting] heartbeat update lastSeenAt', currentPlayer?.id);
+      databases.updateDocument(
+          DATABASE_ID,
+          PLAYERS_COLLECTION_ID,
+          currentPlayer.id,
+          { lastSeenAt: new Date().toISOString() }
+      ).catch(() => {});
     }, 2000);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, [currentPlayer]);
 
-  // 🚀 Fetch initial + polling toutes les 2 sec après que le joueur est inscrit
+  /* ------------ loading spinner -------------- */
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
-    if (!roomId || !currentPlayer?.id) return;
-    let polling: any;
+    console.log('[waiting] players changed →', players);
+    setIsLoading(players.length === 0);
+  }, [players, currentPlayer]);
 
-    const waitUntilPlayerIsRegistered = async () => {
-      try {
-        let registered = false;
-        while (!registered) {
-          const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
-            Query.equal("roomId", roomId),
-          ]);
-          const game = res.documents[0];
-          if (game?.playerIds.includes(currentPlayer.id)) {
-            registered = true;
-            await updatePlayers(); // fetch initial
-            polling = setInterval(() => updatePlayers(), 2000); // polling
-          } else {
-            await new Promise((r) => setTimeout(r, 300));
-          }
-        }
-      } catch (e) {
-        console.error(e);
-        toast({
-          title: "Erreur",
-          description: "Impossible de rejoindre la salle.",
-          variant: "destructive",
-        });
-        navigate('/');
-      }
-    };
-
-    waitUntilPlayerIsRegistered();
-    return () => clearInterval(polling);
-  }, [roomId, currentPlayer?.id]);
-
-  const updatePlayers = async () => {
-    try {
-      // 🔁 Toujours récupérer le game à jour
-      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
-        Query.equal("roomId", roomId),
-      ]);
-      const game = res.documents[0];
-      if (!game) throw new Error("Partie introuvable");
-
-      const playerDocs = await Promise.all(
-          game.playerIds.map((id: string) =>
-              databases.getDocument(DATABASE_ID, PLAYERS_COLLECTION_ID, id).catch(() => null)
-          )
-      );
-
-      const now = new Date();
-      const realPlayers = playerDocs
-          .filter(Boolean)
-          .filter((doc: any) => {
-            const lastSeen = new Date(doc.lastSeenAt);
-            return (now.getTime() - lastSeen.getTime()) / 1000 < 4;
-          })
-          .map((doc: any) => ({
-            id: doc.$id,
-            name: doc.name,
-            avatar: doc.avatar,
-            score: doc.score || 0,
-            coins: doc.coins || 0,
-            isHost: doc.$id === game.hostId,
-            isEliminated: false,
-            isBot: false,
-          }));
-
-      const neededBots = Math.max(0, MIN_PLAYERS - realPlayers.length);
-      const newBots = generateBots(neededBots);
-      setBots(newBots);
-
-      const finalPlayers = [...realPlayers, ...newBots];
-      setPlayers(finalPlayers);
-
-      // ✅ Affiche les joueurs seulement quand currentPlayer est visible dans la liste
-      const isCurrentPlayerVisible = finalPlayers.some(p => p.id === currentPlayer?.id);
-      setIsLoading(!isCurrentPlayerVisible);
-    } catch (err: any) {
-      console.error(err);
-      toast({
-        title: "Erreur",
-        description: err.message || "Impossible de charger les joueurs",
-        variant: "destructive",
-      });
-      navigate('/');
-    }
-  };
-
+  /* -------------- quitter la salle ----------- */
   const handleQuit = async () => {
+    console.log('[waiting] handleQuit() currentPlayer', currentPlayer?.id);
     if (!currentPlayer || !roomId) return;
 
     try {
@@ -171,7 +78,7 @@ const WaitingRoom: React.FC = () => {
           )
       );
 
-      const activeHumans = stillConnected.filter(p => p && !p.isBot && p.lastSeenAt).filter(p => {
+      const activeHumans = stillConnected.filter(p => p && p.lastSeenAt).filter(p => {
         const secondsAgo = (Date.now() - new Date(p.lastSeenAt).getTime()) / 1000;
         return secondsAgo < 10;
       });
@@ -217,69 +124,78 @@ const WaitingRoom: React.FC = () => {
     }
   };
 
-
+  /* -------------- lancer la partie ----------- */
   const startGame = async () => {
+    console.log('[waiting] startGame() called by host');
     try {
-      // On récupère le doc game
-      const res = await databases.listDocuments(DATABASE_ID, GAMES_COLLECTION_ID, [
-        Query.equal("roomId", roomId),
-      ]);
-      const game = res.documents[0];
-      if (!game) throw new Error("Partie introuvable");
+      const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          GAMES_COLLECTION_ID,
+          [Query.equal('roomId', roomId)]
+      );
+      const game = documents[0];
+      if (!game) throw new Error('Partie introuvable');
 
-      // ⚡️ Tirage
+      console.log('[waiting] loading questions…');
       const questionIds = await loadQuestions();
+      console.log('[waiting] questionIds =', questionIds);
+
 
       await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
-        status: "playing",
+        status: 'playing',
         round: 1,
         currentQuestionIndex: 0,
         questions: questionIds,
       });
 
+      // 👉 on ne fait plus de navigate : le realtime redirigera tout le monde
       setCurrentRound(1);
       setCurrentQuestionIndex(0);
-      navigate(`/round1/${roomId}`);
     } catch (err: any) {
       toast({
-        title: "Erreur",
-        description: err.message || "Impossible de démarrer la partie",
-        variant: "destructive",
+        title: 'Erreur',
+        description: err.message || 'Impossible de démarrer la partie',
+        variant: 'destructive',
       });
     }
   };
 
+  /* -------------------- UI ------------------- */
   return (
       <div className="min-h-screen bg-gradient-to-br from-game-blue via-game-purple to-game-red flex flex-col">
         <div className="game-container flex flex-col flex-grow py-8">
+          {/* header */}
           <div className="flex justify-between items-center mb-8">
             <Button
                 variant="outline"
                 className="bg-white/20 hover:bg-white/30 text-white hover:text-white"
-                onClick={() => handleQuit()}
+                onClick={handleQuit}
             >
               <HomeIcon className="h-5 w-5 mr-2" />
               Quitter
             </Button>
+
             <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white">
               <User className="h-4 w-4" />
               <span className="font-medium">{players.length} joueurs</span>
             </div>
           </div>
 
+          {/* titre / code salle */}
           <div className="text-center mb-8 animate-bounce-in">
             <GameTitle>Salle d'attente</GameTitle>
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <p className="text-xl text-white">Code de la salle:</p>
+              <p className="text-xl text-white">Code de la salle :</p>
               <div className="flex items-center gap-2">
                 <div className="bg-white/20 py-2 px-6 rounded-lg font-mono text-xl font-bold tracking-wider text-white">
                   {roomId}
                 </div>
-                <CopyToClipboard text={roomId || ''} />
+                <CopyToClipboard text={roomId ?? ''} />
               </div>
             </div>
           </div>
 
+          {/* contenu */}
           {isLoading ? (
               <div className="flex-grow flex flex-col items-center justify-center">
                 <LoadingSpinner />
@@ -287,6 +203,7 @@ const WaitingRoom: React.FC = () => {
               </div>
           ) : (
               <>
+                {/* liste joueurs */}
                 <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8 animate-zoom-in">
                   <h2 className="text-xl font-medium mb-4 flex items-center text-white">
                     <User className="h-5 w-5 mr-2" />
@@ -305,9 +222,10 @@ const WaitingRoom: React.FC = () => {
                             <AvatarImage src={player.avatar} alt={player.name} />
                             <AvatarFallback>{player.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
+
                           {!player.isBot && (
                               <p className="font-medium text-center text-white">{player.name}</p>
-                            )}
+                          )}
 
                           {player.isHost && (
                               <span className="text-xs mt-1 py-1 px-2 bg-accent/50 rounded-full">Hôte</span>
@@ -334,6 +252,7 @@ const WaitingRoom: React.FC = () => {
                   )}
                 </div>
 
+                {/* info attente */}
                 <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm mb-8">
                   <h2 className="text-xl font-medium mb-4 flex items-center text-white">
                     <TimerIcon className="h-5 w-5 mr-2" />
@@ -344,6 +263,7 @@ const WaitingRoom: React.FC = () => {
                   </p>
                 </div>
 
+                {/* bouton start */}
                 <div className="mt-auto text-center">
                   {players.find(p => p.isHost)?.id === currentPlayer?.id ? (
                       <Button

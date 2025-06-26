@@ -17,14 +17,16 @@ import { GameNotification }  from '@/components/ui/game-notification';
 import { useBotTurn }        from '@/hooks/useBotTurn';
 import { useToast }          from '@/hooks/use-toast';
 import { databases }         from '@/lib/appwrite';
+import {useGameRealtime} from "@/hooks/useGameRealtime.ts";
 
 /* ------------------------------------------------------------------ */
-const DATABASE_ID         = '68308ece00320290574e';
-const GAMES_COLLECTION_ID = '68308f180030b8019d46';
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+const GAMES_COLLECTION_ID = import.meta.env.VITE_APPWRITE_GAMES_COLLECTION_ID;
 
 /* ------------------------------------------------------------------ */
 const QuizRound1: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  useGameRealtime(roomId)
   const navigate    = useNavigate();
   const { toast }   = useToast();
 
