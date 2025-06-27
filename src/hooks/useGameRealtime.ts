@@ -1,10 +1,10 @@
-import { useEffect }       from 'react';
+import { useEffect } from 'react';
 import { client, databases } from '@/lib/appwrite';
-import { Query, Models }   from 'appwrite';
-import { useGame }         from '@/context/GameContext';
-import { PlayerDoc }       from '@/types/appwrite';
+import { Query, Models } from 'appwrite';
+import { useGame } from '@/context/GameContext';
+import { PlayerDoc } from '@/types/appwrite';
 import { buildPlayerList } from '@/lib/buildPlayerList';
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 interface GameDoc extends Models.Document {
     roomId: string;
@@ -27,7 +27,10 @@ export const useGameRealtime = (roomId?: string) => {
         setCurrentRound,
         setCurrentQuestionIndex,
         setPlayers,
+        loadQuestions,
+        questions,
     } = useGame();
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -37,7 +40,7 @@ export const useGameRealtime = (roomId?: string) => {
         let unsubscribe: (() => void) | undefined;
 
         (async () => {
-            /* ───────────── récupération du document game ───────────── */
+            /* ─── 1. récup doc game ─────────────────────────────── */
             const { documents } = await databases.listDocuments<GameDoc>(
                 DATABASE_ID,
                 GAMES_COLLECTION_ID,
@@ -47,7 +50,7 @@ export const useGameRealtime = (roomId?: string) => {
             console.log('[realtime] game doc fetched =', game);
             if (!game) return;
 
-            /* ───────────── fetch initial des joueurs ───────────── */
+            /* ─── 2. fetch initial players + éventuelle hydr. Q ─── */
             try {
                 const docs = await Promise.all(
                     game.playerIds.map(id =>
@@ -71,19 +74,31 @@ export const useGameRealtime = (roomId?: string) => {
                 setPlayers(initialPlayers);
                 setCurrentRound(game.round);
                 setCurrentQuestionIndex(game.currentQuestionIndex);
+
+                if (game.questions?.length && questions.length === 0) {
+                    console.log('[realtime] hydrate initial questions');
+                    await loadQuestions(game.questions);
+                }
             } catch (err) {
                 console.warn('[realtime] initial fetch players failed', err);
             }
 
-            /* ───────────── souscription Realtime ───────────── */
-            const channel = `databases.${DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${game.$id}`;
+            /* ─── 3. souscription Realtime ───────────────────────── */
+            const channel =
+                `databases.${DATABASE_ID}.collections.${GAMES_COLLECTION_ID}.documents.${game.$id}`;
             console.log('[realtime] subscribing to', channel);
 
             unsubscribe = client.subscribe<GameDoc>(channel, async (msg) => {
                 console.log('[realtime] message received', msg);
                 const g = msg.payload;
 
-                // récupère / met à jour les docs player
+                /* hydrater les questions si besoin */
+                if (g.questions?.length && questions.length === 0) {
+                    console.log('[realtime] hydrate questions from realtime event');
+                    await loadQuestions(g.questions);
+                }
+
+                /* maj players */
                 const docs = await Promise.all(
                     g.playerIds.map(id =>
                         databases
@@ -106,6 +121,7 @@ export const useGameRealtime = (roomId?: string) => {
                 console.log('[realtime] final players list =', players);
                 setPlayers(players);
 
+                /* maj round / index */
                 setCurrentRound(g.round);
                 setCurrentQuestionIndex(g.currentQuestionIndex);
                 console.log('[realtime] round=', g.round,
