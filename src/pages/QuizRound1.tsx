@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  TimerIcon,
-  AlertTriangle,
-  AlertCircle,
-  ArrowDown,
+  TimerIcon, AlertTriangle, AlertCircle, ArrowDown,
 } from 'lucide-react';
-
 import { useGame }           from '@/context/GameContext';
 import { Progress }          from '@/components/ui/progress';
 import RoundTitle            from '@/components/game/RoundTitle';
@@ -17,61 +13,55 @@ import { GameNotification }  from '@/components/ui/game-notification';
 import { useBotTurn }        from '@/hooks/useBotTurn';
 import { useToast }          from '@/hooks/use-toast';
 import { databases }         from '@/lib/appwrite';
-import {useGameRealtime} from "@/hooks/useGameRealtime.ts";
+import { useGameRealtime }   from '@/hooks/useGameRealtime';
 
 /* ------------------------------------------------------------------ */
-const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+const DATABASE_ID         = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const GAMES_COLLECTION_ID = import.meta.env.VITE_APPWRITE_GAMES_COLLECTION_ID;
 
 /* ------------------------------------------------------------------ */
 const QuizRound1: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  useGameRealtime(roomId)
-  const navigate    = useNavigate();
-  const { toast }   = useToast();
+  useGameRealtime(roomId);                     // synchro temps-réel
+  const navigate  = useNavigate();
+  const { toast } = useToast();
 
-  /* ---------------------- contexte ---------------------- */
+  /* ---------- état global partagé ---------- */
   const {
-    /* état global jeu ------------------------------------ */
     questions,
     currentQuestionIndex,
     setCurrentQuestionIndex,
     players,
     currentPlayer,
 
-    /* timer ---------------------------------------------- */
+    /* NEW champs partagés */
+    activePlayerId,
+    setActivePlayerId,
     timeRemaining,
     setTimeRemaining,
 
-    /* helpers -------------------------------------------- */
+    /* helpers et round */
     addCoins,
     updatePlayerStatus,
     startDuel,
-
-    /* gestion round -------------------------------------- */
     switchingRound,
     unlockRoundSwitch,
   } = useGame();
 
-  /* déverrouille la protection de navigation au montage */
   useEffect(() => unlockRoundSwitch(), []);
 
-  /* ------------------- state locaux -------------------- */
+  /* ---------- état local visuel ---------- */
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showResult,     setShowResult]     = useState(false);
-  const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
-  const [localStatuses, setLocalStatuses] = useState<
-      Record<string, 'green' | 'orange' | 'red'>
-  >({});
-  const [coinChanges, setCoinChanges] = useState<Record<string, number>>({});
-  const [statusNotif, setStatusNotif] = useState<{
-    playerId: string; status: 'orange' | 'red';
-  } | null>(null);
+  const [localStatuses, setLocalStatuses] = useState<Record<string,'green'|'orange'|'red'>>({});
+  const [coinChanges,   setCoinChanges]    = useState<Record<string,number>>({});
+  const [statusNotif,   setStatusNotif]    = useState<{playerId:string;status:'orange'|'red'}|null>(null);
 
-  /* -------------------- calculs ------------------------ */
+  /* ---------- joueurs actifs & question ---------- */
   const currentQuestion = questions[currentQuestionIndex];
   const activePlayers   = players.filter(p => !p.isEliminated);
+  const activePlayer    = players.find(p => p.id === activePlayerId);
 
   const opts = useMemo(() => {
     if (!currentQuestion) return [];
@@ -94,71 +84,106 @@ const QuizRound1: React.FC = () => {
     return currentQuestion.correctIndex ?? -1;
   }, [currentQuestion, opts]);
 
-  /* -------------------- init tour ---------------------- */
+  /* au premier rendu, init activePlayerId + statuts locaux */
   useEffect(() => {
-    if (activePlayers.length && !activePlayerId) {
+    if (!activePlayerId && activePlayers.length) {
       setActivePlayerId(activePlayers[0].id);
-
-      if (!Object.keys(localStatuses).length) {
-        const init: Record<string, 'green'> = {};
-        activePlayers.forEach(p => (init[p.id] = 'green'));
-        setLocalStatuses(init);
-      }
+      const init: Record<string,'green'> = {};
+      activePlayers.forEach(p => (init[p.id] = 'green'));
+      setLocalStatuses(init);
     }
-  }, [activePlayers, activePlayerId, localStatuses]);
+  }, [activePlayers, activePlayerId, setActivePlayerId]);
 
-  /* -------------------- timer -------------------------- */
+  /* ---------- TIMER partagé ---------- */
   useEffect(() => {
-    if (showResult || !activePlayerId) return;
+    /* seul le joueur actif humain (non-bot) « pilote » le chrono */
+    if (
+        currentPlayer?.id !== activePlayerId ||
+        currentPlayer?.isBot ||
+        showResult
+    ) return;
+
     if (timeRemaining > 0) {
-      const t = setTimeout(() => setTimeRemaining(t => t - 1), 1000);
+      const t = setTimeout(async () => {
+        const newVal = timeRemaining - 1;
+        setTimeRemaining(newVal);
+        /* push vers Appwrite ➜ tous les autres seront notifiés */
+        await databases.updateDocument(
+            DATABASE_ID, GAMES_COLLECTION_ID, roomId!, { timeRemaining: newVal }
+        );
+      }, 1000);
       return () => clearTimeout(t);
     }
-    onTimeUp();
-  }, [timeRemaining, showResult, activePlayerId, setTimeRemaining]);
+    onTimeUp();                                  // temps écoulé
+  }, [timeRemaining, activePlayerId, showResult, currentPlayer]);
 
-  const onTimeUp = () => {
-    setShowResult(true);
-    if (activePlayerId) {
-      changeCoins(activePlayerId, -50);
-      penalise(activePlayerId);
-    }
-    setTimeout(nextTurn, 3000);
-  };
 
-  /* ---------------- sélection -------------------------- */
-  const onSelect = (idx: number) => {
+  /* ---------- logique sélection / pénalités ---------- */
+  const onSelect = async (idx: number) => {
     if (showResult || selectedOption !== null || !activePlayerId) return;
 
     setSelectedOption(idx);
     setShowResult(true);
 
-    if (idx === correctIdx) {
+    if (idx === currentQuestion?.correctIndex) {
       changeCoins(activePlayerId, 100);
     } else {
-      penalise(activePlayerId);
+      await penalise(activePlayerId);
       changeCoins(activePlayerId, -75);
+    }
+    /* laisse le temps d’afficher la réponse puis passe au tour suivant */
+    setTimeout(nextTurn, 3000);
+  };
+
+  /* ---------- BOT automatique ---------- */
+  useBotTurn({
+    isBotTurn     : !!activePlayer?.isBot && !showResult && !!currentQuestion,
+    answer        : onSelect,
+    correctIndex  : currentQuestion?.correctIndex ?? -1,
+    nbOptions     : currentQuestion?.options?.length ?? 0,
+    successRate   : 0.2,
+    minDelayMs    : 1000,
+    maxDelayMs    : 6000,
+  });
+
+  const onTimeUp = async () => {
+    setShowResult(true);
+    if (activePlayerId) {
+      await penalise(activePlayerId);
+      changeCoins(activePlayerId, -50);
     }
     setTimeout(nextTurn, 3000);
   };
 
-  /* ------------------- bot ----------------------------- */
-  const activePlayer = activePlayerId
-      ? players.find(p => p.id === activePlayerId)
-      : undefined;
+  /* ---------- tour suivant (piloté par le joueur actif) ---------- */
+  const nextTurn = async () => {
+    if (switchingRound) return;
+    if (currentPlayer?.id !== activePlayerId) return;   // sécurité
 
-  useBotTurn({
-    isBotTurn:
-        !!activePlayer?.isBot && !showResult && correctIdx >= 0 && opts.length > 0,
-    answer: onSelect,
-    correctIndex: correctIdx,
-    nbOptions: opts.length,
-    successRate: 0.2,
-    minDelayMs: 1000,
-    maxDelayMs: 6000,
-  });
+    const nextIndex = (currentQuestionIndex + 1) % questions.length;
+    const pos       = activePlayers.findIndex(p => p.id === activePlayerId);
+    const newActive = activePlayers[(pos + 1) % activePlayers.length]?.id;
 
-  /* ---------------- helpers --------------------------- */
+    /* reset visuel local */
+    setStatusNotif(null);
+    setSelectedOption(null);
+    setShowResult(false);
+    setTimeRemaining(10);
+
+    /* push dans Appwrite ➜ tous les clients se mettent à jour */
+    await databases.updateDocument(
+        DATABASE_ID,
+        GAMES_COLLECTION_ID,
+        roomId!,
+        {
+          currentQuestionIndex: nextIndex,
+          activePlayerId      : newActive,
+          timeRemaining       : 10,
+        }
+    );
+  };
+
+  /* ---------- helpers (coins & statuts) ---------- */
   const changeCoins = (id: string, delta: number) => {
     addCoins(id, delta);
     setCoinChanges(prev => ({ ...prev, [id]: delta }));
@@ -166,7 +191,7 @@ const QuizRound1: React.FC = () => {
   };
 
   const penalise = async (id: string) => {
-    const cur = localStatuses[id] ?? 'green';
+    const cur  = localStatuses[id] ?? 'green';
     const next = cur === 'green' ? 'orange' : 'red';
 
     setLocalStatuses(prev => ({ ...prev, [id]: next }));
@@ -190,23 +215,6 @@ const QuizRound1: React.FC = () => {
         });
       }
       navigate(`/duel-select/${roomId}/${id}`);
-    }
-  };
-
-  /* --------------- tour suivant ----------------------- */
-  const nextTurn = () => {
-    if (switchingRound) return;          // blocage pendant transition
-
-    setStatusNotif(null);
-    setSelectedOption(null);
-    setShowResult(false);
-    setTimeRemaining(10);
-
-    setCurrentQuestionIndex(i => (i + 1) % questions.length);
-
-    if (activePlayerId) {
-      const pos = activePlayers.findIndex(p => p.id === activePlayerId);
-      setActivePlayerId(activePlayers[(pos + 1) % activePlayers.length].id);
     }
   };
 

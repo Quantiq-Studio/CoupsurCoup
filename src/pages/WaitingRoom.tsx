@@ -11,6 +11,7 @@ import {GameTitle} from "@/components/ui/game-title.tsx";
 import CopyToClipboard from "@/components/game/CopyToClipboard.tsx";
 import LoadingSpinner from "@/components/game/LoadingSpinner.tsx";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
+import {generateBots} from "@/lib/utils/generateBots.ts";
 
 const DATABASE_ID            = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const GAMES_COLLECTION_ID    = import.meta.env.VITE_APPWRITE_GAMES_COLLECTION_ID;
@@ -139,12 +140,23 @@ const WaitingRoom: React.FC = () => {
       const questionIds = await loadQuestions();
       console.log('[waiting] questionIds =', questionIds);
 
+      if (!game.bots || game.bots.length === 0) {
+        const generated = generateBots(Math.max(0, MIN_PLAYERS - game.playerIds.length));
+        await databases.updateDocument(
+            DATABASE_ID,
+            GAMES_COLLECTION_ID,
+            game.$id,
+            { bots: generated }
+        );
+      }
 
       await databases.updateDocument(DATABASE_ID, GAMES_COLLECTION_ID, game.$id, {
         status: 'playing',
         round: 1,
         currentQuestionIndex: 0,
         questions: questionIds,
+        activePlayerId: game.playerIds[0],  // NEW
+        timeRemaining: 10,
       });
 
       // 👉 on ne fait plus de navigate : le realtime redirigera tout le monde

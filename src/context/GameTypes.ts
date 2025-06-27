@@ -102,6 +102,11 @@ export type Game = {
   createdAt: string;
   currentQuestionIndex: number;
   questions: string[];
+  activePlayerId: string;
+  timeRemaining: number;
+  selectedOption: number | null;   // index cliqué par le joueur actif
+  showResult    : boolean;         // quand l’animation de correction doit s’afficher
+  bots          : Player[];        // tableau figé des bots (mêmes pour tous)
 };
 
 export type DuelTheme = {

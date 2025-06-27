@@ -59,6 +59,11 @@ const toGame = (doc: any): Game => ({
     createdAt: doc.createdAt,
     currentQuestionIndex: doc.currentQuestionIndex ?? 0,
     questions: doc.questions ?? [],
+    activePlayerId: doc.activePlayerId ?? null,
+    timeRemaining: doc.timeRemaining ?? 10,
+    selectedOption: doc.selectedOption ?? null,
+    showResult: doc.showResult ?? false,
+    bots: doc.bots ?? [],
 });
 
 const mockGridItems: FinalGridItem[] = [
@@ -112,6 +117,15 @@ type GameContextType = {
 
     isAnswering: boolean;
     setIsAnswering: React.Dispatch<React.SetStateAction<boolean>>;
+
+    activePlayerId: string | null;
+    setActivePlayerId: React.Dispatch<React.SetStateAction<string | null>>;
+
+    selectedOption: number | null;
+    setSelectedOption: React.Dispatch<React.SetStateAction<number | null>>;
+
+    showResult: boolean;
+    setShowResult: React.Dispatch<React.SetStateAction<boolean>>;
 
     timeRemaining: number;
     setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
@@ -169,6 +183,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
     const [winner, setWinner] = useState<Player | null>(null);
 
     const [isAnswering, setIsAnswering] = useState(false);
+    const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
+    const [selectedOption, setSelectedOption] = useState<number | null>(null);
+    const [showResult,     setShowResult]     = useState(false);
     const [timeRemaining, setTimeRemaining] = useState(10);
     const [gameMode, setGameMode] = useState<GameMode>("phase_selective");
 
@@ -527,6 +544,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({children}
         setWinner,
         isAnswering,
         setIsAnswering,
+        activePlayerId,
+        setActivePlayerId,
+        selectedOption,
+        setSelectedOption,
+        showResult,
+        setShowResult,
         timeRemaining,
         setTimeRemaining,
         gameMode,
