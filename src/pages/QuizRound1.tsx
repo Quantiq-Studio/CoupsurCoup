@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   TimerIcon, AlertTriangle, AlertCircle, ArrowDown,
 } from 'lucide-react';
+
 import { useGame }           from '@/context/GameContext';
 import { Progress }          from '@/components/ui/progress';
 import RoundTitle            from '@/components/game/RoundTitle';
@@ -26,7 +27,7 @@ const QuizRound1: React.FC = () => {
   const navigate  = useNavigate();
   const { toast } = useToast();
 
-  /* ---------- état global partagé ---------- */
+  /* ---------- état global (contexte) ---------- */
   const {
     questions,
     currentQuestionIndex,
@@ -34,11 +35,15 @@ const QuizRound1: React.FC = () => {
     players,
     currentPlayer,
 
-    /* NEW champs partagés */
+    /* champs partagés, désormais dans le contexte */
     activePlayerId,
     setActivePlayerId,
     timeRemaining,
     setTimeRemaining,
+    selectedOption,
+    setSelectedOption,
+    showResult,
+    setShowResult,
 
     /* helpers et round */
     addCoins,
@@ -48,17 +53,10 @@ const QuizRound1: React.FC = () => {
     unlockRoundSwitch,
   } = useGame();
 
+  /* déverrouille la protection de navigation au montage */
   useEffect(() => unlockRoundSwitch(), []);
 
-  /* ---------- état local visuel ---------- */
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [showResult,     setShowResult]     = useState(false);
-
-  const [localStatuses, setLocalStatuses] = useState<Record<string,'green'|'orange'|'red'>>({});
-  const [coinChanges,   setCoinChanges]    = useState<Record<string,number>>({});
-  const [statusNotif,   setStatusNotif]    = useState<{playerId:string;status:'orange'|'red'}|null>(null);
-
-  /* ---------- joueurs actifs & question ---------- */
+  /* ---------- calculs ---------- */
   const currentQuestion = questions[currentQuestionIndex];
   const activePlayers   = players.filter(p => !p.isEliminated);
   const activePlayer    = players.find(p => p.id === activePlayerId);
@@ -84,19 +82,16 @@ const QuizRound1: React.FC = () => {
     return currentQuestion.correctIndex ?? -1;
   }, [currentQuestion, opts]);
 
-  /* au premier rendu, init activePlayerId + statuts locaux */
+  /* ---------- initialisations ---------- */
   useEffect(() => {
     if (!activePlayerId && activePlayers.length) {
       setActivePlayerId(activePlayers[0].id);
-      const init: Record<string,'green'> = {};
-      activePlayers.forEach(p => (init[p.id] = 'green'));
-      setLocalStatuses(init);
     }
   }, [activePlayers, activePlayerId, setActivePlayerId]);
 
   /* ---------- TIMER partagé ---------- */
   useEffect(() => {
-    /* seul le joueur actif humain (non-bot) « pilote » le chrono */
+    /* seul le joueur actif humain « pilote » le chrono */
     if (
         currentPlayer?.id !== activePlayerId ||
         currentPlayer?.isBot ||
@@ -107,47 +102,60 @@ const QuizRound1: React.FC = () => {
       const t = setTimeout(async () => {
         const newVal = timeRemaining - 1;
         setTimeRemaining(newVal);
-        /* push vers Appwrite ➜ tous les autres seront notifiés */
+
+        // push vers Appwrite → tous les clients sont notifiés
         await databases.updateDocument(
             DATABASE_ID, GAMES_COLLECTION_ID, roomId!, { timeRemaining: newVal }
         );
       }, 1000);
       return () => clearTimeout(t);
     }
-    onTimeUp();                                  // temps écoulé
+
+    onTimeUp();           // temps écoulé
   }, [timeRemaining, activePlayerId, showResult, currentPlayer]);
 
+  /* ---------- BOT automatique ---------- */
+  useBotTurn({
+    isBotTurn     : !!activePlayer?.isBot && !showResult && !!currentQuestion,
+    answer        : idx => onSelect(idx),
+    correctIndex  : correctIdx,
+    nbOptions     : opts.length,
+    successRate   : 0.2,
+    minDelayMs    : 1000,
+    maxDelayMs    : 6000,
+  });
 
-  /* ---------- logique sélection / pénalités ---------- */
+  /* ---------- sélection d’une réponse ---------- */
   const onSelect = async (idx: number) => {
     if (showResult || selectedOption !== null || !activePlayerId) return;
 
     setSelectedOption(idx);
     setShowResult(true);
 
-    if (idx === currentQuestion?.correctIndex) {
+    await databases.updateDocument(
+        DATABASE_ID, GAMES_COLLECTION_ID, roomId!, {
+          selectedOption: idx,
+          showResult    : true,
+        }
+    );
+
+    if (idx === correctIdx) {
       changeCoins(activePlayerId, 100);
     } else {
       await penalise(activePlayerId);
       changeCoins(activePlayerId, -75);
     }
-    /* laisse le temps d’afficher la réponse puis passe au tour suivant */
+
     setTimeout(nextTurn, 3000);
   };
 
-  /* ---------- BOT automatique ---------- */
-  useBotTurn({
-    isBotTurn     : !!activePlayer?.isBot && !showResult && !!currentQuestion,
-    answer        : onSelect,
-    correctIndex  : currentQuestion?.correctIndex ?? -1,
-    nbOptions     : currentQuestion?.options?.length ?? 0,
-    successRate   : 0.2,
-    minDelayMs    : 1000,
-    maxDelayMs    : 6000,
-  });
-
+  /* ---------- temps écoulé ---------- */
   const onTimeUp = async () => {
     setShowResult(true);
+    await databases.updateDocument(
+        DATABASE_ID, GAMES_COLLECTION_ID, roomId!, { showResult: true }
+    );
+
     if (activePlayerId) {
       await penalise(activePlayerId);
       changeCoins(activePlayerId, -50);
@@ -155,7 +163,7 @@ const QuizRound1: React.FC = () => {
     setTimeout(nextTurn, 3000);
   };
 
-  /* ---------- tour suivant (piloté par le joueur actif) ---------- */
+  /* ---------- passage au tour suivant ---------- */
   const nextTurn = async () => {
     if (switchingRound) return;
     if (currentPlayer?.id !== activePlayerId) return;   // sécurité
@@ -164,31 +172,32 @@ const QuizRound1: React.FC = () => {
     const pos       = activePlayers.findIndex(p => p.id === activePlayerId);
     const newActive = activePlayers[(pos + 1) % activePlayers.length]?.id;
 
-    /* reset visuel local */
-    setStatusNotif(null);
     setSelectedOption(null);
     setShowResult(false);
     setTimeRemaining(10);
 
     /* push dans Appwrite ➜ tous les clients se mettent à jour */
     await databases.updateDocument(
-        DATABASE_ID,
-        GAMES_COLLECTION_ID,
-        roomId!,
-        {
+        DATABASE_ID, GAMES_COLLECTION_ID, roomId!, {
           currentQuestionIndex: nextIndex,
           activePlayerId      : newActive,
           timeRemaining       : 10,
+          selectedOption      : null,
+          showResult          : false,
         }
     );
   };
 
-  /* ---------- helpers (coins & statuts) ---------- */
+  /* ---------- coins & statuts ---------- */
+  const [coinChanges, setCoinChanges] = React.useState<Record<string, number>>({});
   const changeCoins = (id: string, delta: number) => {
     addCoins(id, delta);
     setCoinChanges(prev => ({ ...prev, [id]: delta }));
     setTimeout(() => setCoinChanges(prev => ({ ...prev, [id]: 0 })), 2000);
   };
+
+  const [localStatuses, setLocalStatuses] = React.useState<Record<string,'green'|'orange'|'red'>>({});
+  const [statusNotif,   setStatusNotif]   = React.useState<{playerId:string;status:'orange'|'red'}|null>(null);
 
   const penalise = async (id: string) => {
     const cur  = localStatuses[id] ?? 'green';
@@ -200,20 +209,7 @@ const QuizRound1: React.FC = () => {
 
     if (next === 'red') {
       await startDuel(id);
-      try {
-        await databases.updateDocument(
-            DATABASE_ID,
-            GAMES_COLLECTION_ID,
-            roomId!,
-            { round: 2 }
-        );
-      } catch {
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de mettre à jour le round du jeu.',
-          variant: 'destructive',
-        });
-      }
+      // passage au round 2 géré ailleurs
       navigate(`/duel-select/${roomId}/${id}`);
     }
   };
